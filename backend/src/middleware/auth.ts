@@ -1,0 +1,28 @@
+import { Request, Response, NextFunction } from 'express';
+import { verifyToken } from '../services/auth.service';
+import { ErrorCode } from '../constants';
+import { AuthRequest } from '../types/express.types';
+
+export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Authentication required' },
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = await verifyToken(token);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: { code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Invalid or expired token' },
+    });
+  }
+};
