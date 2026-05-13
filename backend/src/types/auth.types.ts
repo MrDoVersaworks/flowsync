@@ -1,3 +1,14 @@
+import { Request } from 'express';
+
+export interface JWTPayload {
+  userId: string;
+  email: string;
+}
+
+export interface AuthRequest extends Request {
+  user?: JWTPayload;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -10,9 +21,4 @@ export interface AuthResponse {
   user: UserResponse;
   accessToken: string;
   refreshToken: string;
-}
-
-export interface JWTPayload {
-  userId: string;
-  email: string;
 }

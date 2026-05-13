@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../services/auth.service';
-import { ErrorCode } from '../constants';
-import { AuthRequest } from '../types/express.types';
+import { verifyToken } from '../services/auth.service.js';
+import { ErrorCode } from '../constants.js';
+import { AuthRequest } from '../types/express.types.js';
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;

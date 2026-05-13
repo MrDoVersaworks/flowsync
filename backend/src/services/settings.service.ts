@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../db/connection';
-import { users } from '../db/schema';
-import { encrypt, decrypt } from '../utils/encryption';
-import { ErrorCode } from '../constants';
-import { logger } from '../utils/logger';
+import { db } from '../db/connection.js';
+import { users } from '../db/schema.js';
+import { encrypt, decrypt } from '../utils/encryption.js';
+import { ErrorCode } from '../constants.js';
+import { logger } from '../utils/logger.js';
 
 export interface UserSettingsResponse {
   gemini_model_config: string | null;
@@ -15,7 +15,7 @@ export async function updateUserSettings(
   geminiKey?: string, 
   modelConfig?: string
 ): Promise<UserSettingsResponse> {
-  const updateData: any = { updated_at: new Date() };
+  const updateData: Partial<typeof users.$inferInsert> = { updated_at: new Date() };
 
   if (geminiKey) {
     const { iv, content, tag } = encrypt(geminiKey);

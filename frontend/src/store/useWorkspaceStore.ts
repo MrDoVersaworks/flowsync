@@ -7,13 +7,19 @@ interface Workspace {
   invite_code: string;
 }
 
-interface Task {
+export interface Task {
   id: string;
+  workspace_id: string;
   column_id: string;
   title: string;
   description: string | null;
   position: number;
-  priority: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  created_by: string;
+  assigned_to: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Column {

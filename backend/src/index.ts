@@ -3,13 +3,13 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { logger } from './utils/logger';
-import { errorHandler } from './middleware/errorHandler';
-import authRoutes from './routes/auth.routes';
-import workspaceRoutes from './routes/workspace.routes';
-import kanbanRoutes from './routes/kanban.routes';
-import settingsRoutes from './routes/settings.routes';
-import aiRoutes from './routes/ai.routes';
+import { logger } from './utils/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import authRoutes from './routes/auth.routes.js';
+import workspaceRoutes from './routes/workspace.routes.js';
+import kanbanRoutes from './routes/kanban.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 dotenv.config();
 

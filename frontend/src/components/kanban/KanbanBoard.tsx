@@ -47,7 +47,6 @@ export default function KanbanBoard() {
 
     // Logic for cross-column move vs same-column move
     // This will be expanded in the next step to include the socket broadcast
-    console.log(`Task ${taskId} dropped over ${overId}`);
   };
 
   return (

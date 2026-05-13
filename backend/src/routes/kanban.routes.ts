@@ -1,56 +1,43 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import { authMiddleware } from '../middleware/auth';
-import { asyncHandler } from '../middleware/errorHandler';
-import { getBoard, createColumn, createTask, moveTask } from '../services/kanban.service';
+import { Response, Router } from 'express';
+import { getBoard, createColumn, createTask, moveTask } from '../services/kanban.service.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { AuthRequest } from '../types/auth.types.js';
 
 const router = Router();
 
-// Validation Schemas
-const createColumnSchema = z.object({
-  title: z.string().min(1).max(100),
-});
-
-const createTaskSchema = z.object({
-  columnId: z.string().uuid(),
-  title: z.string().min(1).max(255),
-});
-
-const moveTaskSchema = z.object({
-  taskId: z.string().uuid(),
-  fromColumnId: z.string().uuid(),
-  toColumnId: z.string().uuid(),
-  newPosition: z.number().int().min(0),
-});
-
-// Protect all Kanban routes
-router.use(authMiddleware);
-
-// GET /api/kanban/:workspaceId
-router.get('/:workspaceId', asyncHandler(async (req: any, res: any) => {
-  const result = await getBoard(req.userId!, req.params.workspaceId);
-  res.status(200).json({ success: true, data: result });
+// Get full board for a workspace
+router.get('/:workspaceId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const board = await getBoard(userId, workspaceId);
+  res.status(200).json({ success: true, data: board });
 }));
 
-// POST /api/kanban/:workspaceId/columns
-router.post('/:workspaceId/columns', asyncHandler(async (req: any, res: any) => {
-  const { title } = createColumnSchema.parse(req.body);
-  const result = await createColumn(req.userId!, req.params.workspaceId, title);
-  res.status(201).json({ success: true, data: result });
+// Create column
+router.post('/:workspaceId/columns', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const { title } = req.body;
+  const column = await createColumn(userId, workspaceId, title);
+  res.status(201).json({ success: true, data: column });
 }));
 
-// POST /api/kanban/:workspaceId/tasks
-router.post('/:workspaceId/tasks', asyncHandler(async (req: any, res: any) => {
-  const { columnId, title } = createTaskSchema.parse(req.body);
-  const result = await createTask(req.userId!, req.params.workspaceId, columnId, title);
-  res.status(201).json({ success: true, data: result });
+// Create task
+router.post('/:workspaceId/tasks', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const { columnId, title } = req.body;
+  const task = await createTask(userId, workspaceId, columnId, title);
+  res.status(201).json({ success: true, data: task });
 }));
 
-// POST /api/kanban/:workspaceId/move
-router.post('/:workspaceId/move', asyncHandler(async (req: any, res: any) => {
-  const validatedData = moveTaskSchema.parse(req.body);
-  await moveTask(req.userId!, req.params.workspaceId, validatedData);
-  res.status(200).json({ success: true, message: 'Task moved successfully' });
+// Move task (cross-column or reorder)
+router.post('/:workspaceId/move', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const { taskId, fromColumnId, toColumnId, newPosition } = req.body;
+  await moveTask(userId, workspaceId, { taskId, fromColumnId, toColumnId, newPosition });
+  res.status(200).json({ success: true });
 }));
 
 export default router;

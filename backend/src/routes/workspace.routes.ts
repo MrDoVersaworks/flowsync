@@ -1,52 +1,44 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import { authMiddleware } from '../middleware/auth';
-import { asyncHandler } from '../middleware/errorHandler';
+import { Response, Router } from 'express';
 import { 
   createWorkspace, 
   listUserWorkspaces, 
   getWorkspaceDetail, 
   joinWorkspaceByCode 
-} from '../services/workspace.service';
+} from '../services/workspace.service.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { AuthRequest } from '../types/auth.types.js';
 
 const router = Router();
 
-// Validation Schemas
-const createWorkspaceSchema = z.object({
-  name: z.string().min(2).max(100),
-});
-
-const joinWorkspaceSchema = z.object({
-  inviteCode: z.string().length(8),
-});
-
-// Protect all workspace routes
-router.use(authMiddleware);
-
-// GET /api/workspaces
-router.get('/', asyncHandler(async (req: any, res: any) => {
-  const result = await listUserWorkspaces(req.userId!);
-  res.status(200).json({ success: true, data: result });
+// Get all workspaces for current user
+router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaces = await listUserWorkspaces(userId);
+  res.status(200).json({ success: true, data: workspaces });
 }));
 
-// POST /api/workspaces
-router.post('/', asyncHandler(async (req: any, res: any) => {
-  const { name } = createWorkspaceSchema.parse(req.body);
-  const result = await createWorkspace(req.userId!, name);
-  res.status(201).json({ success: true, data: result });
+// Create new workspace
+router.post('/', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const { name } = req.body;
+  const workspace = await createWorkspace(userId, name);
+  res.status(201).json({ success: true, data: workspace });
 }));
 
-// GET /api/workspaces/:id
-router.get('/:id', asyncHandler(async (req: any, res: any) => {
-  const result = await getWorkspaceDetail(req.userId!, req.params.id);
-  res.status(200).json({ success: true, data: result });
+// Get workspace detail (members, tasks, etc)
+router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.id as string;
+  const detail = await getWorkspaceDetail(userId, workspaceId);
+  res.status(200).json({ success: true, data: detail });
 }));
 
-// POST /api/workspaces/join
-router.post('/join', asyncHandler(async (req: any, res: any) => {
-  const { inviteCode } = joinWorkspaceSchema.parse(req.body);
-  const result = await joinWorkspaceByCode(req.userId!, inviteCode);
-  res.status(200).json({ success: true, data: result });
+// Join workspace by invite code
+router.post('/join', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const { inviteCode } = req.body;
+  const workspace = await joinWorkspaceByCode(userId, inviteCode);
+  res.status(200).json({ success: true, data: workspace });
 }));
 
 export default router;

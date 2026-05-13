@@ -8,6 +8,7 @@ import {
 } from '@dnd-kit/sortable';
 import KanbanTask from './KanbanTask';
 import { Plus, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Task } from '@/store/useWorkspaceStore';
 import AIBreakdownModal from './AIBreakdownModal';
 
 interface ColumnProps {
@@ -15,7 +16,7 @@ interface ColumnProps {
     id: string;
     workspace_id: string;
     title: string;
-    tasks: any[];
+    tasks: Task[];
   };
 }
 

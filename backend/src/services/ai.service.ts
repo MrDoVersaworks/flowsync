@@ -1,12 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getDecryptedApiKey } from './settings.service';
-import { db } from '../db/connection';
-import { users } from '../db/schema';
+import { getDecryptedApiKey } from './settings.service.js';
+import { db } from '../db/connection.js';
+import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { logger } from '../utils/logger';
-import { ErrorCode, DEFAULT_AI_MODEL } from '../constants';
+import { logger } from '../utils/logger.js';
+import { ErrorCode, DEFAULT_AI_MODEL } from '../constants.js';
 
-export async function breakdownGoal(userId: string, goal: string): Promise<any[]> {
+import { AITask } from '../types/ai.types.js';
+
+export async function breakdownGoal(userId: string, goal: string): Promise<AITask[]> {
   // 1. Get user configuration
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (userResult.length === 0) {
@@ -15,7 +17,11 @@ export async function breakdownGoal(userId: string, goal: string): Promise<any[]
 
   const user = userResult[0];
   const apiKey = await getDecryptedApiKey(userId);
-  const modelName = user.gemini_model_config || DEFAULT_AI_MODEL;
+  const modelName = user.gemini_model_config;
+
+  if (!modelName) {
+    throw { status: 400, code: ErrorCode.AI_SERVICE_ERROR, message: 'AI model not configured for this user.' };
+  }
 
   logger.info('AI', `Initiating breakdown for goal: "${goal}" using model: ${modelName}`);
 

@@ -1,19 +1,16 @@
 import crypto from 'crypto';
-import dotenv from 'dotenv';
-import { ENCRYPTION_ALGORITHM } from '../constants';
+import { config } from '../config/index.js';
+import { ENCRYPTION_ALGORITHM } from '../constants.js';
 
-dotenv.config();
+const KEY_BUFFER = Buffer.from(config.security.aesKey, 'hex');
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // Must be 32 characters
-const ALGORITHM = ENCRYPTION_ALGORITHM;
-
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-  throw new Error('ENCRYPTION_KEY must be exactly 32 characters long');
+if (KEY_BUFFER.length !== 32) {
+  throw new Error('[ERR_INVALID_KEY] AES_KEY must be exactly 32 bytes (64 hex characters) for AES-256-GCM.');
 }
 
 export function encrypt(text: string): { iv: string; content: string; tag: string } {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY!), iv);
+  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, KEY_BUFFER, iv);
   
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
@@ -29,8 +26,8 @@ export function encrypt(text: string): { iv: string; content: string; tag: strin
 
 export function decrypt(iv: string, content: string, tag: string): string {
   const decipher = crypto.createDecipheriv(
-    ALGORITHM,
-    Buffer.from(ENCRYPTION_KEY!),
+    ENCRYPTION_ALGORITHM,
+    KEY_BUFFER,
     Buffer.from(iv, 'hex')
   );
   

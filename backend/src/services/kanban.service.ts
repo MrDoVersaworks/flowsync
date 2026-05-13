@@ -1,9 +1,9 @@
 import { eq, and, asc, sql } from 'drizzle-orm';
-import { db } from '../db/connection';
-import { columns, tasks, workspaceMembers } from '../db/schema';
-import { ErrorCode } from '../constants';
-import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types';
-import { logger } from '../utils/logger';
+import { db } from '../db/connection.js';
+import { columns, tasks, workspaceMembers } from '../db/schema.js';
+import { ErrorCode } from '../constants.js';
+import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
+import { logger } from '../utils/logger.js';
 
 // Helper to verify workspace membership
 async function verifyMembership(userId: string, workspaceId: string) {
@@ -60,7 +60,11 @@ export async function createColumn(userId: string, workspaceId: string, title: s
     .from(columns)
     .where(eq(columns.workspace_id, workspaceId));
   
-  const nextPos = (maxPosResult[0]?.max ?? -1) + 1;
+  let nextPos = 0;
+  const maxPos = maxPosResult[0]?.max;
+  if (maxPos !== null && maxPos !== undefined) {
+    nextPos = maxPos + 1;
+  }
 
   const inserted = await db.insert(columns).values({
     workspace_id: workspaceId,
@@ -81,7 +85,11 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
     .from(tasks)
     .where(eq(tasks.column_id, columnId));
   
-  const nextPos = (maxPosResult[0]?.max ?? -1) + 1;
+  let nextPos = 0;
+  const maxPos = maxPosResult[0]?.max;
+  if (maxPos !== null && maxPos !== undefined) {
+    nextPos = maxPos + 1;
+  }
 
   const inserted = await db.insert(tasks).values({
     workspace_id: workspaceId,

@@ -1,9 +1,9 @@
 import { eq, and } from 'drizzle-orm';
-import { db } from '../db/connection';
-import { workspaces, workspaceMembers, users } from '../db/schema';
-import { ErrorCode } from '../constants';
-import { WorkspaceResponse, WorkspaceDetailResponse } from '../types/workspace.types';
-import { logger } from '../utils/logger';
+import { db } from '../db/connection.js';
+import { workspaces, workspaceMembers, users } from '../db/schema.js';
+import { ErrorCode } from '../constants.js';
+import { WorkspaceResponse, WorkspaceDetailResponse, WorkspaceMemberResponse } from '../types/workspace.types.js';
+import { logger } from '../utils/logger.js';
 
 function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -60,7 +60,7 @@ export async function listUserWorkspaces(userId: string): Promise<WorkspaceRespo
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
     .where(eq(workspaceMembers.user_id, userId));
 
-  return result.map(ws => ({
+  return result.map((ws: any): WorkspaceResponse => ({
     ...ws,
     created_at: ws.created_at.toISOString(),
   }));
@@ -100,7 +100,7 @@ export async function getWorkspaceDetail(userId: string, workspaceId: string): P
 
   return {
     ...toWorkspaceResponse(workspace),
-    members: membersResult.map(m => ({
+    members: membersResult.map((m: any): WorkspaceMemberResponse => ({
       ...m,
       joined_at: m.joined_at.toISOString(),
     })),

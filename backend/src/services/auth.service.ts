@@ -1,17 +1,19 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { eq } from 'drizzle-orm';
-import { db } from '../db/connection';
-import { users } from '../db/schema';
+import { db } from '../db/connection.js';
+import { users } from '../db/schema.js';
 import { 
   SALT_ROUNDS, 
   AUTH_ACCESS_TOKEN_EXPIRY, 
   AUTH_REFRESH_TOKEN_EXPIRY, 
   ErrorCode 
-} from '../constants';
-import { JWTPayload, AuthResponse, UserResponse } from '../types/auth.types';
+} from '../constants.js';
+import { JWTPayload, AuthResponse, UserResponse } from '../types/auth.types.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
+import { config } from '../config/index.js';
+
+const JWT_SECRET = config.auth.jwtSecret;
 
 function generateTokens(user: { id: string; email: string }): { accessToken: string; refreshToken: string } {
   const payload: JWTPayload = { userId: user.id, email: user.email };

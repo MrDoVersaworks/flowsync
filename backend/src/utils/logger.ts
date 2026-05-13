@@ -1,56 +1,51 @@
-type LogCategory = 'SERVER' | 'DATABASE' | 'AUTH' | 'SOCKET' | 'AI' | 'ERROR';
+type LogCategory = 'AUTH' | 'DATABASE' | 'SERVER' | 'SOCKET' | 'AI' | 'ERROR';
 
 const colors = {
   reset: '\x1b[0m',
-  bright: '\x1b[1m',
   dim: '\x1b[2m',
-  fg: {
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    blue: '\x1b[34m',
-    magenta: '\x1b[35m',
-    cyan: '\x1b[36m',
-    white: '\x1b[37m',
-  },
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  cyan: '\x1b[36m',
 };
 
-const categoryColors: Record<LogCategory, string> = {
-  SERVER: colors.fg.cyan,
-  DATABASE: colors.fg.magenta,
-  AUTH: colors.fg.green,
-  SOCKET: colors.fg.blue,
-  AI: colors.fg.yellow,
-  ERROR: colors.fg.red,
-};
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 export const logger = {
-  info: (category: LogCategory, message: string, data?: any) => {
-    const timestamp = new Date().toISOString();
-    const color = categoryColors[category];
+  info: (category: LogCategory, message: string, data?: unknown) => {
+    if (!IS_DEV) return;
     console.log(
-      `${colors.dim}[${timestamp}]${colors.reset} ${color}${colors.bright}[${category}]${colors.reset} ${message}`
+      `${colors.dim}[${new Date().toISOString()}]${colors.reset} ` +
+      `${colors.cyan}[${category}]${colors.reset} ` +
+      `${message}`
     );
     if (data) {
       console.log(`${colors.dim}${JSON.stringify(data, null, 2)}${colors.reset}`);
     }
   },
-  warn: (category: LogCategory, message: string, data?: any) => {
-    const timestamp = new Date().toISOString();
-    console.warn(
-      `${colors.dim}[${timestamp}]${colors.reset} ${colors.fg.yellow}${colors.bright}[WARN][${category}]${colors.reset} ${message}`
+
+  warn: (category: LogCategory, message: string, data?: unknown) => {
+    if (!IS_DEV) return;
+    console.log(
+      `${colors.dim}[${new Date().toISOString()}]${colors.reset} ` +
+      `${colors.yellow}[${category}]${colors.reset} ` +
+      `${message}`
     );
     if (data) {
       console.log(`${colors.dim}${JSON.stringify(data, null, 2)}${colors.reset}`);
     }
   },
-  error: (category: LogCategory, message: string, error?: any) => {
-    const timestamp = new Date().toISOString();
+
+  error: (category: LogCategory, message: string, error?: unknown) => {
+    // We ALWAYS log errors, even in production, but we use console.error
     console.error(
-      `${colors.dim}[${timestamp}]${colors.reset} ${colors.fg.red}${colors.bright}[ERROR][${category}]${colors.reset} ${message}`
+      `${colors.dim}[${new Date().toISOString()}]${colors.reset} ` +
+      `${colors.red}[${category}]${colors.reset} ` +
+      `${colors.red}${message}${colors.reset}`
     );
     if (error) {
-      console.error(error);
+      console.error(`${colors.red}${error instanceof Error ? error.stack : JSON.stringify(error, null, 2)}${colors.reset}`);
     }
   },
 };

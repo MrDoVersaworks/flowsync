@@ -28,22 +28,19 @@ class SocketService {
     }
   }
 
-  on(event: string, callback: (data: any) => void) {
-    if (this.socket) {
-      this.socket.on(event, callback);
-    }
+  on(event: string, callback: (data: unknown) => void) {
+    if (!this.socket) return;
+    this.socket.on(event, callback);
   }
 
   off(event: string) {
-    if (this.socket) {
-      this.socket.off(event);
-    }
+    if (!this.socket) return;
+    this.socket.off(event);
   }
 
-  emit(event: string, data: any) {
-    if (this.socket) {
-      this.socket.emit(event, data);
-    }
+  emit(event: string, data: unknown) {
+    if (!this.socket) return;
+    this.socket.emit(event, data);
   }
 }
 

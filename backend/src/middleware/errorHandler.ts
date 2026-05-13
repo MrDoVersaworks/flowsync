@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger';
-import { ErrorCode } from '../constants';
+import { logger } from '../utils/logger.js';
+import { ErrorCode } from '../constants.js';
 
 // Centralized Async Wrapper
 export const asyncHandler = (fn: Function) => (req: Request, res: Response, next: NextFunction) => {
@@ -8,7 +8,7 @@ export const asyncHandler = (fn: Function) => (req: Request, res: Response, next
 };
 
 // Global Error Handler
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: Error & { status?: number; code?: string }, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.status || 500;
   const message = err.message || 'Internal Server Error';
 
