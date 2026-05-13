@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface Workspace {
+export interface Workspace {
   id: string;
   name: string;
   owner_id: string;
@@ -22,7 +22,7 @@ export interface Task {
   updated_at: string;
 }
 
-interface Column {
+export interface Column {
   id: string;
   workspace_id: string;
   title: string;

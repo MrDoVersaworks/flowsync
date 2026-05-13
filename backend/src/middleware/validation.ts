@@ -9,7 +9,7 @@ export const validate = (schema: z.ZodSchema) => (req: Request, res: Response, n
   } catch (error: unknown) {
     let message = 'Invalid request data';
     if (error instanceof z.ZodError) {
-      message = error.errors[0]?.message || message;
+      message = error.issues[0]?.message || message;
     }
     
     res.status(400).json({

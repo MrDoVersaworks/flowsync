@@ -7,7 +7,7 @@ import { Layout, LogOut, Settings, Plus } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, clearAuth } = useAuthStore();
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
   if (isAuthPage && !isAuthenticated) {
@@ -58,7 +58,7 @@ export default function Navbar() {
               <span className="text-xs font-medium text-text-secondary">{user?.name}</span>
             </div>
             <button 
-              onClick={logout}
+              onClick={clearAuth}
               className="p-2 hover:bg-white/5 rounded-lg text-text-secondary hover:text-white transition-smooth"
               title="Logout"
             >
