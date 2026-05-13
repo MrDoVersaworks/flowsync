@@ -96,7 +96,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="text-7xl md:text-9xl font-bold tracking-tighter font-display leading-[1.0] pb-4"
+              className="text-7xl md:text-9xl font-bold tracking-tighter font-display leading-[1.15] py-4"
             >
               Orchestrate <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-blue via-accent-cyan to-accent-purple">
