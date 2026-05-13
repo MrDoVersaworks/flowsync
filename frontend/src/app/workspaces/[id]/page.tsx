@@ -7,8 +7,9 @@ import { api } from '@/lib/api';
 import { socketService } from '@/lib/socket';
 import { SocketEvent } from '@/constants';
 import KanbanBoard from '@/components/kanban/KanbanBoard';
-import { ChevronLeft, Settings, Share2, Loader2 } from 'lucide-react';
+import { ChevronLeft, Settings, Share2, Loader2, Zap, Layout } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 export default function WorkspacePage() {
   const { id } = useParams();
@@ -22,7 +23,6 @@ export default function WorkspacePage() {
         const { data } = await api.get(`/kanban/${id}`);
         setBoard(data.data.columns);
         
-        // Join WebSocket room
         socketService.connect();
         socketService.joinWorkspace(id as string);
       } catch (error: any) {
@@ -35,10 +35,8 @@ export default function WorkspacePage() {
 
     fetchBoard();
 
-    // Listen for real-time updates
     socketService.on(SocketEvent.TASK_MOVED, (data) => {
-      // In Phase 3, we will implement the optimistic merge logic here
-      console.log('Real-time move received:', data);
+      // Optimistic merge logic implemented in Board component
     });
 
     return () => {
@@ -48,49 +46,76 @@ export default function WorkspacePage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-4">
-        <Loader2 className="w-12 h-12 text-accent-gold animate-spin" />
-        <p className="text-text-secondary font-medium">Synchronizing Reality...</p>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-6 bg-background">
+        <div className="relative">
+          <Loader2 className="w-16 h-16 text-accent-blue animate-spin" />
+          <div className="absolute inset-0 bg-accent-blue/20 blur-xl rounded-full animate-pulse" />
+        </div>
+        <p className="text-text-secondary font-display text-lg tracking-widest uppercase animate-pulse">
+          Synchronizing Consciousness...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-background relative">
+      {/* Subtle Background Atmosphere */}
+      <div className="absolute top-0 right-0 w-[30%] h-[30%] bg-accent-blue/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none" />
+
       {/* Workspace Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-border-color bg-bg-secondary/20">
-        <div className="flex items-center gap-6">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between px-10 py-8 glass border-b border-white/5 relative z-10"
+      >
+        <div className="flex items-center gap-8">
           <button 
             onClick={() => router.push('/')}
-            className="p-2 hover:bg-bg-surface rounded-full text-text-dim hover:text-white transition-smooth"
+            className="w-12 h-12 flex items-center justify-center glass hover:bg-white/5 rounded-2xl text-text-dim hover:text-white transition-smooth"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-white leading-none mb-1">
-              {activeWorkspace?.name || 'Workspace'}
-            </h1>
-            <p className="text-xs text-text-dim font-mono tracking-widest uppercase">
-              Production Environment • Live
-            </p>
+          
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 bg-accent-blue/10 rounded-2xl flex items-center justify-center">
+              <Layout className="w-6 h-6 text-accent-blue" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white leading-none mb-2 font-display tracking-tight">
+                {activeWorkspace?.name || 'Sanctuary'}
+              </h1>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-accent-cyan animate-pulse" />
+                <span className="text-[10px] font-bold text-text-dim tracking-widest uppercase">
+                  Production Environment • Live Sync
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-bg-surface hover:bg-bg-surface-hover border border-border-color rounded-md text-sm font-medium transition-smooth text-text-secondary hover:text-white">
-            <Share2 className="w-4 h-4" />
-            Invite
+        <div className="flex items-center gap-4">
+          <button className="flex items-center gap-3 px-6 py-3 glass hover:bg-white/5 text-sm font-bold transition-smooth text-text-secondary hover:text-white rounded-xl group">
+            <Share2 className="w-4 h-4 group-hover:scale-110 transition-smooth" />
+            <span>Invite Collaborative Minds</span>
           </button>
-          <button className="p-2.5 bg-bg-surface hover:bg-bg-surface-hover border border-border-color rounded-md text-text-dim hover:text-white transition-smooth">
-            <Settings className="w-5 h-5" />
+          <button className="w-12 h-12 flex items-center justify-center glass hover:bg-white/5 rounded-2xl text-text-dim hover:text-white transition-smooth">
+            <Settings className="w-6 h-6" />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Kanban Board Area */}
-      <div className="flex-1 overflow-hidden p-8 bg-bg-primary">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="flex-1 overflow-hidden p-10 relative z-10"
+      >
         <KanbanBoard />
-      </div>
+      </motion.div>
     </div>
   );
 }

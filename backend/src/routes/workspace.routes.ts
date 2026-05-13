@@ -7,18 +7,22 @@ import {
 } from '../services/workspace.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
+import { validate, createWorkspaceSchema, joinWorkspaceSchema } from '../middleware/validation.js';
 
 const router = Router();
 
-// Get all workspaces for current user
+// Get all workspaces for current user (Paginated)
 router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
-  const workspaces = await listUserWorkspaces(userId);
-  res.status(200).json({ success: true, data: workspaces });
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 20;
+  
+  const result = await listUserWorkspaces(userId, page, limit);
+  res.status(200).json({ success: true, ...result });
 }));
 
 // Create new workspace
-router.post('/', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/', validate(createWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const { name } = req.body;
   const workspace = await createWorkspace(userId, name);
@@ -34,7 +38,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
 }));
 
 // Join workspace by invite code
-router.post('/join', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const { inviteCode } = req.body;
   const workspace = await joinWorkspaceByCode(userId, inviteCode);

@@ -1,48 +1,65 @@
 'use client';
 
-import { useAuthStore } from '@/store/useAuthStore';
-import { LogOut, User, Layout, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
+import { Layout, LogOut, Settings, Plus } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, clearAuth, isAuthenticated } = useAuthStore();
+  const pathname = usePathname();
+  const { isAuthenticated, user, logout } = useAuthStore();
 
-  return (
-    <nav className="fixed top-0 left-0 right-0 h-16 border-b border-white/10 bg-[#0a0a0b]/80 backdrop-blur-md z-50 px-6 flex items-center justify-between">
-      <div className="flex items-center gap-8">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-all">
-          <div className="w-8 h-8 relative">
-            <div className="absolute inset-0 bg-blue-600 rounded-lg transform rotate-45 opacity-20"></div>
-            <Layout className="w-8 h-8 text-blue-500 relative z-10" />
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+  if (isAuthPage && !isAuthenticated) {
+    // We still show a simplified navbar on auth pages
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 h-16 flex items-center px-6">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 bg-accent-blue rounded-lg flex items-center justify-center shadow-lg shadow-accent-blue/30 group-hover:scale-110 transition-smooth">
+            <Layout className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white hidden sm:block">
-            Flow<span className="text-blue-500">Sync</span>
+          <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+            FlowSync
           </span>
         </Link>
+      </header>
+    );
+  }
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 h-16 flex items-center justify-between px-6">
+      <div className="flex items-center gap-8">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-8 h-8 bg-accent-blue rounded-lg flex items-center justify-center shadow-lg shadow-accent-blue/30 group-hover:scale-110 transition-smooth">
+            <Layout className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xl font-bold tracking-tight">FlowSync</span>
+        </Link>
+
+        {isAuthenticated && (
+          <nav className="hidden md:flex items-center gap-6">
+            <Link 
+              href="/workspaces" 
+              className={`text-sm font-medium transition-smooth ${pathname.includes('/workspaces') ? 'text-white' : 'text-text-secondary hover:text-white'}`}
+            >
+              Workspaces
+            </Link>
+          </nav>
+        )}
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-4">
         {isAuthenticated ? (
           <>
-            <Link 
-              href="/settings"
-              className="p-2 text-white/40 hover:text-blue-400 transition-all rounded-xl hover:bg-white/5"
-              title="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </Link>
-
-            <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-              <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-400" />
+            <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+              <div className="w-6 h-6 rounded-full bg-accent-purple flex items-center justify-center text-[10px] font-bold">
+                {user?.name.substring(0, 2).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-white hidden xs:block">{user?.name}</span>
+              <span className="text-xs font-medium text-text-secondary">{user?.name}</span>
             </div>
-
-            <button
-              onClick={clearAuth}
-              className="p-2 text-white/40 hover:text-red-400 transition-all rounded-xl hover:bg-red-400/10"
+            <button 
+              onClick={logout}
+              className="p-2 hover:bg-white/5 rounded-lg text-text-secondary hover:text-white transition-smooth"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -51,20 +68,20 @@ export default function Navbar() {
         ) : (
           <div className="flex items-center gap-4">
             <Link 
-              href="/login"
-              className="text-sm font-medium text-white/60 hover:text-white transition-all"
+              href="/login" 
+              className="text-sm font-medium text-text-secondary hover:text-white transition-smooth"
             >
               Sign In
             </Link>
             <Link 
-              href="/register"
-              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold px-5 py-2 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+              href="/register" 
+              className="bg-white text-black text-sm font-bold px-4 py-2 rounded-lg hover:bg-white/90 transition-smooth"
             >
               Get Started
             </Link>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 }

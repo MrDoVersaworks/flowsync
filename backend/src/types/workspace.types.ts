@@ -17,3 +17,13 @@ export interface WorkspaceMemberResponse {
 export interface WorkspaceDetailResponse extends WorkspaceResponse {
   members: WorkspaceMemberResponse[];
 }
+
+export interface PaginatedWorkspaceResponse {
+  data: WorkspaceResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

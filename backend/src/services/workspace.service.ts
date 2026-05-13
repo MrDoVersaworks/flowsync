@@ -1,8 +1,13 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { workspaces, workspaceMembers, users } from '../db/schema.js';
 import { ErrorCode } from '../constants.js';
-import { WorkspaceResponse, WorkspaceDetailResponse, WorkspaceMemberResponse } from '../types/workspace.types.js';
+import { 
+  WorkspaceResponse, 
+  WorkspaceDetailResponse, 
+  WorkspaceMemberResponse,
+  PaginatedWorkspaceResponse 
+} from '../types/workspace.types.js';
 import { logger } from '../utils/logger.js';
 
 function generateInviteCode(): string {
@@ -22,7 +27,6 @@ function toWorkspaceResponse(ws: typeof workspaces.$inferSelect): WorkspaceRespo
 export async function createWorkspace(userId: string, name: string): Promise<WorkspaceResponse> {
   const inviteCode = generateInviteCode();
 
-  // Create workspace
   const inserted = await db.insert(workspaces).values({
     name,
     owner_id: userId,
@@ -35,7 +39,6 @@ export async function createWorkspace(userId: string, name: string): Promise<Wor
 
   const workspace = inserted[0];
 
-  // Add owner as first member
   await db.insert(workspaceMembers).values({
     user_id: userId,
     workspace_id: workspace.id,
@@ -47,7 +50,23 @@ export async function createWorkspace(userId: string, name: string): Promise<Wor
   return toWorkspaceResponse(workspace);
 }
 
-export async function listUserWorkspaces(userId: string): Promise<WorkspaceResponse[]> {
+export async function listUserWorkspaces(
+  userId: string, 
+  page: number = 1, 
+  limit: number = 20
+): Promise<PaginatedWorkspaceResponse> {
+  const offset = (page - 1) * limit;
+
+  // 1. Get total count
+  const countResult = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(workspaces)
+    .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
+    .where(eq(workspaceMembers.user_id, userId));
+  
+  const total = countResult[0]?.count || 0;
+
+  // 2. Get paginated data
   const result = await db
     .select({
       id: workspaces.id,
@@ -58,16 +77,26 @@ export async function listUserWorkspaces(userId: string): Promise<WorkspaceRespo
     })
     .from(workspaces)
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
-    .where(eq(workspaceMembers.user_id, userId));
+    .where(eq(workspaceMembers.user_id, userId))
+    .limit(limit)
+    .offset(offset)
+    .orderBy(desc(workspaces.created_at));
 
-  return result.map((ws: any): WorkspaceResponse => ({
-    ...ws,
-    created_at: ws.created_at.toISOString(),
-  }));
+  return {
+    data: result.map((ws): WorkspaceResponse => ({
+      ...ws,
+      created_at: ws.created_at.toISOString(),
+    })),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    }
+  };
 }
 
 export async function getWorkspaceDetail(userId: string, workspaceId: string): Promise<WorkspaceDetailResponse> {
-  // Verify membership first
   const membership = await db
     .select()
     .from(workspaceMembers)
@@ -85,7 +114,6 @@ export async function getWorkspaceDetail(userId: string, workspaceId: string): P
 
   const workspace = wsResult[0];
 
-  // Get all members
   const membersResult = await db
     .select({
       user_id: users.id,
@@ -100,8 +128,9 @@ export async function getWorkspaceDetail(userId: string, workspaceId: string): P
 
   return {
     ...toWorkspaceResponse(workspace),
-    members: membersResult.map((m: any): WorkspaceMemberResponse => ({
+    members: membersResult.map((m): WorkspaceMemberResponse => ({
       ...m,
+      role: m.role as 'admin' | 'member',
       joined_at: m.joined_at.toISOString(),
     })),
   };
@@ -116,7 +145,6 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
 
   const workspace = wsResult[0];
 
-  // Check if already a member
   const existing = await db
     .select()
     .from(workspaceMembers)

@@ -2,6 +2,12 @@ import { Response, Router } from 'express';
 import { getBoard, createColumn, createTask, moveTask } from '../services/kanban.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
+import { 
+  validate, 
+  createColumnSchema, 
+  createTaskSchema, 
+  moveTaskSchema 
+} from '../middleware/validation.js';
 
 const router = Router();
 
@@ -14,7 +20,7 @@ router.get('/:workspaceId', asyncHandler(async (req: AuthRequest, res: Response)
 }));
 
 // Create column
-router.post('/:workspaceId/columns', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/columns', validate(createColumnSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { title } = req.body;
@@ -23,7 +29,7 @@ router.post('/:workspaceId/columns', asyncHandler(async (req: AuthRequest, res: 
 }));
 
 // Create task
-router.post('/:workspaceId/tasks', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/tasks', validate(createTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { columnId, title } = req.body;
@@ -32,7 +38,7 @@ router.post('/:workspaceId/tasks', asyncHandler(async (req: AuthRequest, res: Re
 }));
 
 // Move task (cross-column or reorder)
-router.post('/:workspaceId/move', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/move', validate(moveTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { taskId, fromColumnId, toColumnId, newPosition } = req.body;

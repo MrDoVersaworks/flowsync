@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { Loader2, ArrowRight, Mail, Lock } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,83 +18,79 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', { email, password });
-      setAuth(response.data.user, response.data.accessToken, response.data.refreshToken);
-      toast.success('Welcome back to FlowSync!');
-      router.push('/workspaces');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'Authentication failed');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAuth(result.user, result.accessToken, result.refreshToken);
+        toast.success('Welcome back!');
+        router.push('/workspaces');
+      } else {
+        toast.error(result.error.message);
+      }
+    } catch (error) {
+      toast.error('Connection failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#0a0a0b] to-[#161618] p-6">
-      <div className="w-full max-w-md">
-        <div className="glass-card p-8 rounded-3xl border border-white/10 shadow-2xl space-y-8">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-white">Welcome Back</h1>
-            <p className="text-white/60">Enter your credentials to access your workspaces</p>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+      <div className="w-full max-w-md glass-card p-10">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-white mb-3 tracking-tight font-display">Welcome Back</h1>
+          <p className="text-text-secondary text-lg">Enter your credentials to access your flow</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
+              Email Address
+            </label>
+            <input
+              type="email"
+              className="auth-input"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/80 ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white/80 ml-1">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center justify-center space-x-2 group"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="text-center">
-            <p className="text-white/40">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium">
-                Create one
-              </Link>
-            </p>
+          <div>
+            <label className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
+              Password
+            </label>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary"
+          >
+            {loading ? 'Authenticating...' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="mt-10 text-center text-sm text-text-secondary">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-accent-blue hover:text-accent-cyan transition-colors font-semibold">
+            Create one
+          </Link>
         </div>
       </div>
     </div>

@@ -1,14 +1,13 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
+import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '@/components/layout/Navbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'FlowSync | Real-Time Sovereign Kanban',
-  description: 'Production-grade collaborative task management with user-defined AI sovereignty.',
+export const metadata = {
+  title: 'FlowSync | Sovereign AI Workflow Orchestration',
+  description: 'Manage your workspaces, kanban boards, and AI breakdowns with absolute sovereignty.',
 };
 
 export default function RootLayout({
@@ -18,22 +17,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Navbar />
-        <main className="min-h-screen pt-16">
-          {children}
-        </main>
-        <Toaster 
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: '#0a0a0a',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '8px',
-            },
-          }}
-        />
+      <body className={`${inter.className} bg-primary text-primary antialiased`}>
+        <div className="relative flex min-h-screen flex-col">
+          <Navbar />
+          <main className="flex-1 overflow-x-hidden pt-16">
+            {children}
+          </main>
+          <Toaster 
+            position="bottom-right"
+            toastOptions={{
+              style: {
+                background: '#0d1117',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+              },
+            }}
+          />
+        </div>
       </body>
     </html>
   );
