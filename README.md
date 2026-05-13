@@ -1,4 +1,4 @@
-# FlowSync — Sovereign Real-Time Kanban Orchestration
+# FlowSync — Sovereign Real-Time Kanban Orchestration <!-- CI_TRIGGER_INIT -->
 
 [![FlowSync CI/CD](https://github.com/MrDoVersaworks/flowsync/actions/workflows/main.yml/badge.svg)](https://github.com/MrDoVersaworks/flowsync/actions)
 [![Socket.io](https://img.shields.io/badge/RealTime-Socket.io-black)](https://socket.io/)
