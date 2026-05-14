@@ -6,6 +6,9 @@ import { Column, Task } from '@/store/useWorkspaceStore';
 import KanbanTask from './KanbanTask';
 import { Plus, MoreHorizontal, Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import { api } from '@/lib/api';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 interface Props {
   column: Column;
@@ -59,10 +62,6 @@ export default function KanbanColumn({ column }: Props) {
               e.stopPropagation();
               if (confirm(`Purge the "${column.title}" column and all its contents? This action is irreversible.`)) {
                 try {
-                  const { api } = await import('@/lib/api');
-                  const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
-                  const { toast } = await import('react-hot-toast');
-                  
                   await api.delete(`/kanban/${column.workspace_id}/columns/${column.id}`);
                   const state = useWorkspaceStore.getState();
                   state.setBoard(state.board.filter(col => col.id !== column.id));
@@ -99,10 +98,6 @@ export default function KanbanColumn({ column }: Props) {
               const title = prompt('Technical Task Title:');
               if (title) {
                 try {
-                  const { api } = await import('@/lib/api');
-                  const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
-                  const { toast } = await import('react-hot-toast');
-                  
                   const { data } = await api.post('/kanban/tasks', {
                     columnId: column.id,
                     title,
@@ -135,9 +130,6 @@ export default function KanbanColumn({ column }: Props) {
               const goal = prompt(`Orchestrate for "${column.title}":\n(What specific tasks should be generated?)`);
               if (goal) {
                 try {
-                  const { api } = await import('@/lib/api');
-                  const { toast } = await import('react-hot-toast');
-                  
                   toast.loading('Orchestrating column focus...', { id: 'ai-column' });
                   await api.post('/ai/breakdown', {
                     workspaceId: column.workspace_id,

@@ -57,12 +57,18 @@ export default function WorkspacePage() {
     
     if (mounted && isAuthenticated) {
       fetchBoard();
-    }
-
-    // Anchor active workspace metadata
-    const ws = workspaces.find(w => w.id === id);
-    if (ws) {
-      setActiveWorkspace(ws);
+      
+      // If we don't have the workspace metadata (e.g. after a refresh), fetch it
+      const ws = workspaces.find(w => w.id === id);
+      if (!ws) {
+        api.get(`/workspaces/${id}`).then(({ data }) => {
+          setActiveWorkspace(data.data);
+        }).catch(err => {
+          console.error('Failed to fetch workspace metadata', err);
+        });
+      } else {
+        setActiveWorkspace(ws);
+      }
     }
 
     socketService.on('board-updated', (data: any) => {
@@ -227,7 +233,8 @@ export default function WorkspacePage() {
             <Settings className="w-4 h-4 md:w-6 md:h-6 text-foreground" />
           </button>
         </div>
-      </motion.div>
+      </div>
+    </motion.div>
       
       {/* AI Orchestration & Actions Bar */}
       <motion.div 
