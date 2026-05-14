@@ -71,19 +71,19 @@ export default function WorkspacePage() {
       }
     }
 
-    socketService.on('board-updated', (data: any) => {
+    socketService.on(SocketEvent.BOARD_UPDATED, (data: any) => {
       if (data?.workspaceId === id) {
         fetchBoard();
       }
     });
 
-    socketService.on('presence-updated', (members: any) => {
+    socketService.on(SocketEvent.PRESENCE_UPDATED, (members: any) => {
       setActiveMinds(members);
     });
 
     return () => {
-      socketService.off('board-updated');
-      socketService.off('presence-updated');
+      socketService.off(SocketEvent.BOARD_UPDATED);
+      socketService.off(SocketEvent.PRESENCE_UPDATED);
     };
   }, [id, workspaces, mounted, isAuthenticated]);
 

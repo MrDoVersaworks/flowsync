@@ -1,7 +1,7 @@
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { columns, tasks, workspaceMembers } from '../db/schema.js';
-import { ErrorCode } from '../constants.js';
+import { ErrorCode, SocketEvent } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
 import { io } from '../index.js';
@@ -77,7 +77,7 @@ export async function createColumn(userId: string, workspaceId: string, title: s
   const response = { ...col, created_at: col.created_at.toISOString() };
   
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'COLUMN_CREATED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_CREATED', workspaceId });
   
   return response;
 }
@@ -114,7 +114,7 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
   };
 
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'TASK_CREATED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_CREATED', workspaceId });
 
   return response;
 }
@@ -143,7 +143,7 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
   };
 
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'TASK_UPDATED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_UPDATED', workspaceId });
 
   return response;
 }
@@ -174,7 +174,7 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
   }
 
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'TASK_MOVED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_MOVED', workspaceId });
 
   logger.info('DATABASE', `Task ${taskId} moved to column ${toColumnId} at pos ${newPosition}`);
 }
@@ -191,7 +191,7 @@ export async function deleteTask(userId: string, workspaceId: string, taskId: st
   }
 
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'TASK_DELETED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_DELETED', workspaceId });
 }
 
 export async function deleteColumn(userId: string, workspaceId: string, columnId: string): Promise<void> {
@@ -212,7 +212,7 @@ export async function deleteColumn(userId: string, workspaceId: string, columnId
   });
 
   // Real-Time Broadcast
-  io.to(workspaceId).emit('board-updated', { type: 'COLUMN_DELETED', workspaceId });
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_DELETED', workspaceId });
   
   logger.info('DATABASE', `Column ${columnId} purged from workspace ${workspaceId}`);
 }

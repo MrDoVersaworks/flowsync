@@ -59,7 +59,6 @@ export const DEFAULT_AI_MODEL = 'gemini-1.5-flash';
 // ============================================================
 export const SocketEvent = {
   JOIN_WORKSPACE: 'join_workspace',
-  TASK_MOVED: 'task_moved',
-  TASK_CREATED: 'task_created',
-  COLUMN_CREATED: 'column_created',
+  BOARD_UPDATED: 'board_updated',
+  PRESENCE_UPDATED: 'presence_updated',
 };

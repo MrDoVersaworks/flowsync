@@ -10,21 +10,34 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import { generalRateLimiter, authRateLimiter, aiRateLimiter } from './middleware/rateLimiter.js';
+import { SocketEvent } from './constants.js';
 
-// Route Imports
-import authRoutes from './routes/auth.routes.js';
-import workspaceRoutes from './routes/workspace.routes.js';
-import kanbanRoutes from './routes/kanban.routes.js';
-import settingsRoutes from './routes/settings.routes.js';
-import aiRoutes from './routes/ai.routes.js';
+const app = express();
+const server = http.createServer(app);
+
+// ============================================================
+// SOCKET.IO REAL-TIME ENGINE (Initialized early for services)
+// ============================================================
+const io = new Server(server, {
+  cors: {
+    origin: [config.allowedOrigin, 'http://127.0.0.1:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }
+});
+export { io };
 
 // Timeout Halt Middleware (Fulfills Rule F2 - No 'any')
 const haltOnTimeout = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (!req.timedout) next();
 };
 
-const app = express();
-const server = http.createServer(app);
+// Route Imports (Must come AFTER io initialization if services use io)
+import authRoutes from './routes/auth.routes.js';
+import workspaceRoutes from './routes/workspace.routes.js';
+import kanbanRoutes from './routes/kanban.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
@@ -88,24 +101,13 @@ app.use((req, res) => {
 // ============================================================
 app.use(errorHandler);
 
-// ============================================================
-// SOCKET.IO REAL-TIME ENGINE
-// ============================================================
-const io = new Server(server, {
-  cors: {
-    origin: [config.allowedOrigin, 'http://127.0.0.1:3000'],
-    methods: ['GET', 'POST'],
-    credentials: true,
-  }
-});
-
 // Map to track active collaborative minds
 const activeMinds = new Map<string, Set<{ userId: string, name: string, socketId: string }>>();
 
 io.on('connection', (socket) => {
   logger.info('SOCKET', `Intelligence linked: ${socket.id}`);
 
-  socket.on('join-workspace', (data: { workspaceId: string, user: { id: string, name: string } }) => {
+  socket.on(SocketEvent.JOIN_WORKSPACE, (data: { workspaceId: string, user: { id: string, name: string } }) => {
     const { workspaceId, user } = data;
     socket.join(workspaceId);
     
@@ -122,7 +124,7 @@ io.on('connection', (socket) => {
 
     // Broadcast current presence to everyone in the room
     const members = Array.from(activeMinds.get(workspaceId)!);
-    io.to(workspaceId).emit('presence-updated', members);
+    io.to(workspaceId).emit(SocketEvent.PRESENCE_UPDATED, members);
     
     logger.info('SOCKET', `User ${user.name} synchronized with workspace: ${workspaceId}`);
   });
@@ -142,7 +144,7 @@ io.on('connection', (socket) => {
       
       // Broadcast updated presence
       const members = Array.from(minds);
-      io.to(wsId).emit('presence-updated', members);
+      io.to(wsId).emit(SocketEvent.PRESENCE_UPDATED, members);
     }
 
     logger.info('SOCKET', `Intelligence decoupled: ${socket.id}`);
@@ -157,5 +159,3 @@ server.listen(PORT, () => {
   logger.info('SERVER', `FlowSync Infrastructure active on port ${PORT}`);
   logger.info('SERVER', `Environment: ${config.nodeEnv}`);
 });
-
-export { io };
