@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'react-hot-toast';
+import { api } from '@/lib/api';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -19,23 +20,18 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const { data } = await api.post('/auth/register', { name, email, password });
 
-      const result = await response.json();
-
-      if (result.success) {
-        setAuth(result.user, result.accessToken, result.refreshToken);
+      if (data.success) {
+        setAuth(data.user, data.accessToken, data.refreshToken);
         toast.success('Account created successfully!');
         router.push('/workspaces');
       } else {
-        toast.error(result.error.message);
+        toast.error(data.error?.message || 'Registration failed');
       }
-    } catch (error) {
-      toast.error('Connection failed');
+    } catch (error: any) {
+      const message = error.response?.data?.error?.message || 'Connection failed';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -45,7 +41,7 @@ export default function RegisterPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
       <div className="w-full max-w-md glass-card p-10">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-3 tracking-tight font-display">Create Account</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-3 tracking-tight font-display">Create Account</h1>
           <p className="text-text-secondary text-lg">Join FlowSync and orchestrate your flow</p>
         </div>
 

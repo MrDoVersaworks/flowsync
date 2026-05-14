@@ -2,6 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '@/components/layout/Navbar';
+import ThemeProvider from '@/components/shared/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,25 +17,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} bg-primary text-primary antialiased`}>
-        <div className="relative flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1 overflow-x-hidden pt-16">
-            {children}
-          </main>
-          <Toaster 
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: '#0d1117',
-                color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-              },
-            }}
-          />
-        </div>
+        <ThemeProvider>
+          <div className="relative flex min-h-screen flex-col">
+            <Navbar />
+            <main className="flex-1 overflow-x-hidden pt-16">
+              {children}
+            </main>
+            <Toaster 
+              position="bottom-right"
+              toastOptions={{
+                style: {
+                  background: 'var(--bg-sec)',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--border-col)',
+                  backdropFilter: 'blur(10px)',
+                },
+              }}
+            />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -31,15 +31,15 @@ export default function AIBreakdownModal({ isOpen, onClose, workspaceId, columnI
         goal,
       });
 
-      // Refresh the board to show new tasks
       const boardRes = await api.get(`/kanban/${workspaceId}`);
       setBoard(boardRes.data.data.columns);
       
       toast.success(data.message);
       onClose();
       setGoal('');
-    } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'AI Breakdown failed';
+    } catch (error: unknown) {
+      // Type-safe error extraction
+      const message = (error as any)?.response?.data?.error?.message || 'AI Breakdown failed';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -55,41 +55,44 @@ export default function AIBreakdownModal({ isOpen, onClose, workspaceId, columnI
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-bg-primary/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/80 backdrop-blur-md"
           />
           
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="glass-panel p-8 w-full max-w-lg relative z-10 border-accent-gold/20"
+            className="glass-card p-10 w-full max-w-lg relative z-10 border-accent-blue/20"
           >
             <button 
               onClick={onClose}
-              className="absolute top-4 right-4 text-text-dim hover:text-white transition-smooth"
+              className="absolute top-6 right-6 text-text-dim hover:text-foreground transition-smooth"
             >
               <X className="w-6 h-6" />
             </button>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-accent-gold/10 rounded-lg">
-                <Sparkles className="w-6 h-6 text-accent-gold" />
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 bg-accent-blue/10 rounded-2xl flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-accent-blue" />
               </div>
-              <h2 className="text-2xl font-bold text-white">AI Task Breakdown</h2>
+              <div>
+                <h2 className="text-3xl font-bold text-foreground font-display tracking-tight">AI Orchestration</h2>
+                <p className="text-xs text-text-dim font-bold tracking-widest uppercase">Powered by Sovereign Gemini</p>
+              </div>
             </div>
 
-            <p className="text-text-secondary mb-6 leading-relaxed">
-              Define a high-level goal, and your <span className="text-accent-gold">Sovereign Gemini</span> instance will split it into actionable Kanban tasks instantly.
+            <p className="text-text-secondary mb-8 leading-relaxed text-lg font-light">
+              Define a high-level goal, and the <span className="text-accent-blue font-semibold">Gemini Nerve System</span> will orchestrate it into actionable tasks.
             </p>
 
-            <form onSubmit={handleBreakdown} className="space-y-6">
+            <form onSubmit={handleBreakdown} className="space-y-8">
               <div className="relative">
-                <Target className="absolute left-3 top-3 w-5 h-5 text-text-dim" />
+                <Target className="absolute left-4 top-4 w-6 h-6 text-text-dim" />
                 <textarea
                   autoFocus
-                  placeholder="e.g. Build a mobile-responsive landing page for a coffee shop..."
+                  placeholder="e.g. Build a mobile-responsive sanctuary for high-performance minds..."
                   rows={4}
-                  className="w-full bg-bg-primary border border-border-color rounded-md py-3 pl-11 pr-4 focus:outline-none focus:border-accent-gold transition-smooth resize-none"
+                  className="auth-input pl-14 pt-4 resize-none min-h-[140px]"
                   value={goal}
                   onChange={e => setGoal(e.target.value)}
                   required
@@ -99,14 +102,14 @@ export default function AIBreakdownModal({ isOpen, onClose, workspaceId, columnI
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-accent-gold hover:bg-accent-gold-hover text-bg-primary font-bold py-3 rounded-md transition-smooth flex items-center justify-center gap-2"
+                className="btn-primary flex items-center justify-center gap-3 shadow-2xl shadow-accent-blue/40"
               >
                 {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5" />
-                    Generate Sub-Tasks
+                    <span>Generate Sub-Tasks</span>
                   </>
                 )}
               </button>

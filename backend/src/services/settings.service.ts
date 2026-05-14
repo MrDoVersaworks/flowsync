@@ -15,7 +15,7 @@ export async function updateUserSettings(
   geminiKey?: string, 
   modelConfig?: string
 ): Promise<UserSettingsResponse> {
-  const updateData: Partial<typeof users.$inferInsert> = { updated_at: new Date() };
+  const updateData: any = { updated_at: new Date() };
 
   if (geminiKey) {
     const { iv, content, tag } = encrypt(geminiKey);
@@ -36,6 +36,35 @@ export async function updateUserSettings(
     gemini_model_config: user[0].gemini_model_config,
     has_api_key: !!user[0].encrypted_gemini_key,
   };
+}
+
+export async function getUserSettings(userId: string): Promise<UserSettingsResponse> {
+  const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (user.length === 0) {
+    throw { status: 404, code: ErrorCode.AUTH_NOT_FOUND, message: 'User not found' };
+  }
+
+  return {
+    gemini_model_config: user[0].gemini_model_config,
+    has_api_key: !!user[0].encrypted_gemini_key,
+  };
+}
+
+export async function clearUserApiKey(userId: string): Promise<void> {
+  await db.update(users).set({
+    encrypted_gemini_key: null,
+    gemini_key_iv: null,
+    gemini_key_tag: null,
+    updated_at: new Date()
+  }).where(eq(users.id, userId));
+}
+
+export async function clearUserModel(userId: string): Promise<void> {
+  await db.update(users).set({
+    gemini_model_config: null,
+    updated_at: new Date()
+  }).where(eq(users.id, userId));
 }
 
 export async function getDecryptedApiKey(userId: string): Promise<string> {

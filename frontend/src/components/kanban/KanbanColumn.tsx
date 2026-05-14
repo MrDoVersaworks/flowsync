@@ -36,24 +36,24 @@ export default function KanbanColumn({ column }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`w-80 flex flex-col h-full shrink-0 group ${isDragging ? 'opacity-50' : ''}`}
+      className={`w-[85vw] sm:w-80 md:w-96 max-w-[380px] flex flex-col h-full shrink-0 group ${isDragging ? 'opacity-50' : ''}`}
     >
       {/* Column Header */}
       <div 
         {...attributes} 
         {...listeners}
-        className="flex items-center justify-between p-4 mb-4 glass rounded-2xl cursor-grab active:cursor-grabbing border-white/5 group-hover:border-white/10 transition-smooth"
+        className="flex items-center justify-between p-4 mb-4 glass rounded-2xl cursor-grab active:cursor-grabbing border-border-color group-hover:border-border-color transition-smooth"
       >
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-accent-blue" />
-          <h3 className="font-bold text-white tracking-tight font-display">
+          <h3 className="font-bold text-foreground tracking-tight font-display">
             {column.title}
           </h3>
-          <span className="text-[10px] font-bold text-text-dim px-2 py-0.5 bg-white/5 rounded-full">
+          <span className="text-[10px] font-bold text-text-dim px-2 py-0.5 bg-bg-secondary rounded-full">
             {column.tasks.length}
           </span>
         </div>
-        <button className="text-text-dim hover:text-white transition-smooth p-1">
+        <button className="text-text-dim hover:text-foreground transition-smooth p-1">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </div>
@@ -69,7 +69,34 @@ export default function KanbanColumn({ column }: Props) {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl text-text-dim hover:text-white hover:border-white/20 hover:bg-white/5 transition-smooth flex items-center justify-center gap-2 group/add"
+          onClick={async () => {
+            const title = prompt('Technical Task Title:');
+            if (title) {
+              try {
+                const { api } = await import('@/lib/api');
+                const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
+                const { toast } = await import('react-hot-toast');
+                
+                const { data } = await api.post('/kanban/tasks', {
+                  columnId: column.id,
+                  title,
+                  description: '',
+                  priority: 'medium',
+                  position: column.tasks.length
+                });
+
+                const state = useWorkspaceStore.getState();
+                const newBoard = state.board.map(col => 
+                  col.id === column.id ? { ...col, tasks: [...col.tasks, data.data] } : col
+                );
+                state.setBoard(newBoard);
+                toast.success('Task Incepted');
+              } catch (error) {
+                console.error(error);
+              }
+            }
+          }}
+          className="w-full py-4 border-2 border-dashed border-border-color rounded-2xl text-text-dim hover:text-foreground hover:border-accent-blue/50 hover:bg-bg-secondary transition-smooth flex items-center justify-center gap-2 group/add"
         >
           <Plus className="w-5 h-5 group-hover/add:rotate-90 transition-smooth" />
           <span className="text-sm font-bold">Incept Task</span>

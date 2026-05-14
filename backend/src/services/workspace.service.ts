@@ -25,6 +25,17 @@ function toWorkspaceResponse(ws: typeof workspaces.$inferSelect): WorkspaceRespo
 }
 
 export async function createWorkspace(userId: string, name: string): Promise<WorkspaceResponse> {
+  // Check for duplicate names for this user
+  const existing = await db
+    .select()
+    .from(workspaces)
+    .where(and(eq(workspaces.owner_id, userId), eq(workspaces.name, name)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    throw { status: 400, code: ErrorCode.VALIDATION_ERROR, message: 'A sanctuary with this name already exists in your infrastructure.' };
+  }
+
   const inviteCode = generateInviteCode();
 
   const inserted = await db.insert(workspaces).values({
@@ -164,4 +175,21 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
   logger.info('DATABASE', `User ${userId} joined workspace: ${workspace.id} via code`);
 
   return toWorkspaceResponse(workspace);
+}
+
+export async function deleteWorkspace(userId: string, workspaceId: string): Promise<void> {
+  const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+  
+  if (wsResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
+  }
+
+  const workspace = wsResult[0];
+
+  if (workspace.owner_id !== userId) {
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the workspace owner can delete it' };
+  }
+
+  await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
+  logger.info('DATABASE', `Workspace deleted: ${workspaceId} by owner: ${userId}`);
 }

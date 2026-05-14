@@ -10,7 +10,13 @@
 In an era of centralized task managers, FlowSync returns control to the engineer.
 - **AI Sovereignty:** A "Bring Your Own Key" (BYOK) architecture ensures that you own your intelligence costs and data privacy.
 - **Zero-Latency Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for instant feedback.
-- **Elite Performance:** Built with a custom Vanilla CSS design system, achieving near-perfect Lighthouse scores and sub-100ms interaction latency.
+- **Elite Performance:** Built with a high-performance Tailwind CSS architecture, achieving near-perfect Lighthouse scores and sub-100ms interaction latency.
+
+## 👥 Targeted Population
+FlowSync is engineered for specific high-performance cohorts who demand speed, transparency, and data sovereignty:
+- **Agile Engineering Teams**: High-velocity teams who need zero-latency synchronization during technical sprints.
+- **AI-First Product Managers**: Leaders who want to bridge the gap between high-level project vision and executable task flows using private AI orchestration.
+- **Sovereign Developers**: Privacy-conscious engineers who refuse to store sensitive project data or API credentials in centralized, multi-tenant SaaS platforms.
 
 ---
 
@@ -71,7 +77,7 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 - **Framework**: Next.js 16+ (App Router) with strict TypeScript.
 - **State Engine**: Zustand (Persistent & Optimistic).
 - **Physics**: @dnd-kit (Accessible Drag-and-Drop) with Framer Motion.
-- **Design System**: Sovereign Vanilla CSS (Zero-Tailwind, Zero-Clutter).
+- **Design System**: Sovereign Tailwind-Native Design System (Zero-Clutter, Ultra-Fast).
 
 ### Backend Infrastructure (The Citadel)
 - **Runtime**: Node.js 20+ & Express (ESM Architecture).

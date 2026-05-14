@@ -1,35 +1,45 @@
-import dotenv from 'dotenv';
+import { z } from 'zod';
+import * as dotenv from 'dotenv';
 dotenv.config();
 
-const requiredEnvVars = [
-  'DATABASE_URL',
-  'JWT_SECRET',
-  'AES_KEY'
-];
+const envSchema = z.object({
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+  AES_KEY: z.string().length(64, 'AES_KEY must be exactly 64 hex characters (32 bytes)'),
+  PORT: z.string().default('5000'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  ALLOWED_ORIGIN: z.string().default('http://localhost:3000'),
+});
 
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`[ERR_MISSING_ENV_VAR] ${envVar} is not defined in the environment.`);
-    process.exit(1);
+type EnvConfig = z.infer<typeof envSchema>;
+
+function validateConfig(): EnvConfig {
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    const missingVars = result.error.issues.map(
+      (issue) => `  - ${issue.path.join('.')}: ${issue.message}`
+    );
+    const errorMessage = [
+      '[ERR_CONFIG_VALIDATION] FlowSync Infrastructure refused to start. Missing or invalid environment variables:',
+      ...missingVars,
+      '',
+      'Check your .env file against .env.example.',
+    ].join('\n');
+
+    throw new Error(errorMessage);
   }
+
+  return result.data;
 }
 
+const env = validateConfig();
+
 export const config = {
-  database: {
-    url: process.env.DATABASE_URL!,
-  },
-  auth: {
-    jwtSecret: process.env.JWT_SECRET!,
-    saltRounds: 10,
-  },
-  security: {
-    aesKey: process.env.AES_KEY!,
-  },
-  ai: {
-    googleKey: process.env.GOOGLE_AI_KEY!,
-  },
-  server: {
-    port: parseInt(process.env.PORT || '5000', 10),
-    allowedOrigin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
-  }
+  port: parseInt(env.PORT, 10),
+  databaseUrl: env.DATABASE_URL,
+  jwtSecret: env.JWT_SECRET,
+  aesKey: env.AES_KEY,
+  nodeEnv: env.NODE_ENV,
+  allowedOrigin: env.ALLOWED_ORIGIN,
 };

@@ -10,7 +10,9 @@ const colors = {
   cyan: '\x1b[36m',
 };
 
-const IS_DEV = process.env.NODE_ENV === 'development';
+import { config } from '../config/index.js';
+
+const IS_DEV = config.nodeEnv === 'development';
 
 export const logger = {
   info: (category: LogCategory, message: string, data?: unknown) => {

@@ -24,9 +24,9 @@ export const validate = (schema: z.ZodSchema) => (req: Request, res: Response, n
 
 // Auth Schemas
 export const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name too long'),
+  email: z.string().email('Invalid email address').max(255, 'Email too long'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password too long'),
 });
 
 export const loginSchema = z.object({
@@ -36,22 +36,31 @@ export const loginSchema = z.object({
 
 // Workspace Schemas
 export const createWorkspaceSchema = z.object({
-  name: z.string().min(2, 'Workspace name must be at least 2 characters'),
+  name: z.string().min(2, 'Workspace name must be at least 2 characters').max(100, 'Name too long'),
 });
 
 export const joinWorkspaceSchema = z.object({
-  inviteCode: z.string().length(8, 'Invite code must be exactly 8 characters'),
+  inviteCode: z.string()
+    .length(8, 'Invite code must be exactly 8 characters')
+    .regex(/^[A-Z0-9]+$/, 'Invite code must be uppercase alphanumeric'),
 });
 
 // Kanban Schemas
 export const createColumnSchema = z.object({
-  title: z.string().min(1, 'Column title is required'),
+  title: z.string().min(1, 'Column title is required').max(100, 'Title too long'),
 });
 
 export const createTaskSchema = z.object({
   columnId: z.string().uuid('Invalid column ID'),
-  title: z.string().min(1, 'Task title is required'),
-  description: z.string().optional(),
+  title: z.string().min(1, 'Task title is required').max(255, 'Title too long'),
+  description: z.string().max(2000, 'Description too long').optional(),
+});
+
+export const updateTaskSchema = z.object({
+  title: z.string().min(1, 'Task title is required').max(255, 'Title too long').optional(),
+  description: z.string().max(10000, 'Description too long').optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  due_date: z.string().datetime().optional().nullable(),
 });
 
 export const moveTaskSchema = z.object({
@@ -63,11 +72,12 @@ export const moveTaskSchema = z.object({
 
 // Settings Schemas
 export const updateSettingsSchema = z.object({
-  geminiKey: z.string().optional(),
-  modelConfig: z.string().optional(),
+  geminiKey: z.string().max(500, 'API Key too long').optional(),
+  modelConfig: z.string().max(100, 'Model config too long').optional(),
 });
 
 // AI Schemas
 export const aiBreakdownSchema = z.object({
-  goal: z.string().min(10, 'Goal must be at least 10 characters'),
+  workspaceId: z.string().uuid('Invalid workspace ID'),
+  goal: z.string().min(10, 'Goal must be at least 10 characters').max(5000, 'Goal too long'),
 });

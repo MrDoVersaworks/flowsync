@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { config } from '../config/index.js';
 import { ENCRYPTION_ALGORITHM } from '../constants.js';
 
-const KEY_BUFFER = Buffer.from(config.security.aesKey, 'hex');
+const KEY_BUFFER = Buffer.from(config.aesKey, 'hex');
 
 if (KEY_BUFFER.length !== 32) {
   throw new Error('[ERR_INVALID_KEY] AES_KEY must be exactly 32 bytes (64 hex characters) for AES-256-GCM.');

@@ -1,48 +1,121 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { api } from '@/lib/api';
 import { socketService } from '@/lib/socket';
 import { SocketEvent } from '@/constants';
 import KanbanBoard from '@/components/kanban/KanbanBoard';
-import { ChevronLeft, Settings, Share2, Loader2, Zap, Layout } from 'lucide-react';
+import { ChevronLeft, Settings, Share2, Loader2, Zap, Layout, X, Copy, Check, Trash2, ShieldAlert, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store/useAuthStore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function WorkspacePage() {
   const { id } = useParams();
   const router = useRouter();
-  const { setBoard, setLoading, isLoading, activeWorkspace } = useWorkspaceStore();
+  const { setBoard, setLoading, isLoading, activeWorkspace, workspaces, setWorkspaces, setActiveWorkspace } = useWorkspaceStore();
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [goal, setGoal] = useState('');
+  const [isIncepting, setIsIncepting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+
+  const fetchBoard = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/kanban/${id}`);
+      setBoard(data.data.columns);
+      
+      socketService.connect();
+      socketService.joinWorkspace(id as string);
+    } catch (error: unknown) {
+      toast.error('Failed to load board');
+      router.push('/workspaces');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBoard = async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get(`/kanban/${id}`);
-        setBoard(data.data.columns);
-        
-        socketService.connect();
-        socketService.joinWorkspace(id as string);
-      } catch (error: any) {
-        toast.error('Failed to load board');
-        router.push('/');
-      } finally {
-        setLoading(false);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (mounted && isAuthenticated) {
+      fetchBoard();
+    }
+
+    // Anchor active workspace metadata
+    const ws = workspaces.find(w => w.id === id);
+    if (ws) {
+      setActiveWorkspace(ws);
+    }
+
+    socketService.on('board-updated', (data: any) => {
+      if (data?.workspaceId === id) {
+        fetchBoard();
       }
-    };
-
-    fetchBoard();
-
-    socketService.on(SocketEvent.TASK_MOVED, (data) => {
-      // Optimistic merge logic implemented in Board component
     });
 
     return () => {
-      socketService.off(SocketEvent.TASK_MOVED);
+      socketService.off('board-updated');
     };
-  }, [id, setBoard, setLoading, router]);
+  }, [id, workspaces, mounted, isAuthenticated]);
+
+  const handleAIInception = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (goal.length < 10) {
+      toast.error('Goal must be at least 10 characters for orchestration.');
+      return;
+    }
+
+    setIsIncepting(true);
+    try {
+      await api.post('/ai/breakdown', { workspaceId: id, goal });
+      toast.success('Technical Plan Incepted');
+      setGoal('');
+      // Immediate refetch for instant gratification
+      await fetchBoard();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error?.message || 'AI Orchestration failed.');
+    } finally {
+      setIsIncepting(false);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (activeWorkspace?.invite_code) {
+      navigator.clipboard.writeText(activeWorkspace.invite_code);
+      setCopied(true);
+      toast.success('Sovereign Code Captured');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!activeWorkspace) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/workspaces/${activeWorkspace.id}`);
+      setWorkspaces(workspaces.filter(ws => ws.id !== activeWorkspace.id));
+      toast.success('Workspace Purged');
+      router.push('/workspaces');
+    } catch (error) {
+      toast.error('Failed to purge workspace');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -68,27 +141,28 @@ export default function WorkspacePage() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-10 py-8 glass border-b border-white/5 relative z-10"
+        className="flex flex-col lg:flex-row lg:items-center justify-between px-4 md:px-10 py-6 md:py-8 glass border-b border-border-color relative z-10 gap-6"
       >
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 md:gap-8">
           <button 
-            onClick={() => router.push('/')}
-            className="w-12 h-12 flex items-center justify-center glass hover:bg-white/5 rounded-2xl text-text-dim hover:text-white transition-smooth"
+            onClick={() => router.push('/workspaces')}
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-xl md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
+            title="Back to Sanctuary"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           
-          <div className="flex items-center gap-5">
-            <div className="w-12 h-12 bg-accent-blue/10 rounded-2xl flex items-center justify-center">
-              <Layout className="w-6 h-6 text-accent-blue" />
+          <div className="flex items-center gap-3 md:gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-accent-blue/10 rounded-xl md:rounded-2xl flex items-center justify-center">
+              <Layout className="w-5 h-5 md:w-6 md:h-6 text-accent-blue" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white leading-none mb-2 font-display tracking-tight">
+              <h1 className="text-xl md:text-3xl font-bold text-foreground leading-none mb-1 md:mb-2 font-display tracking-tight">
                 {activeWorkspace?.name || 'Sanctuary'}
               </h1>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-accent-cyan animate-pulse" />
-                <span className="text-[10px] font-bold text-text-dim tracking-widest uppercase">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-accent-cyan animate-pulse" />
+                <span className="text-[8px] md:text-[10px] font-bold text-text-dim tracking-widest uppercase">
                   Production Environment • Live Sync
                 </span>
               </div>
@@ -96,13 +170,74 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-3 px-6 py-3 glass hover:bg-white/5 text-sm font-bold transition-smooth text-text-secondary hover:text-white rounded-xl group">
+        <div className="flex items-center justify-end gap-3 md:gap-4">
+          <button 
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-3 px-4 md:px-6 py-2.5 md:py-3 glass hover:bg-bg-secondary text-xs md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-xl group"
+          >
             <Share2 className="w-4 h-4 group-hover:scale-110 transition-smooth" />
-            <span>Invite Collaborative Minds</span>
+            <span className="hidden sm:inline">Invite Collaborative Minds</span>
+            <span className="sm:hidden">Invite</span>
           </button>
-          <button className="w-12 h-12 flex items-center justify-center glass hover:bg-white/5 rounded-2xl text-text-dim hover:text-white transition-smooth">
-            <Settings className="w-6 h-6" />
+          <button 
+            onClick={() => setShowSettingsModal(true)}
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-xl md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
+          >
+            <Settings className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
+          </button>
+        </div>
+      </motion.div>
+      
+      {/* AI Orchestration & Actions Bar */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="px-4 md:px-10 py-4 md:py-6 bg-bg-secondary border-b border-border-color flex flex-col md:flex-row items-center gap-4 md:gap-6 relative z-10"
+      >
+        <form onSubmit={handleAIInception} className="flex-1 relative group w-full">
+          <div className="absolute inset-0 bg-accent-purple/5 blur-xl rounded-2xl group-hover:bg-accent-purple/10 transition-smooth" />
+          <div className="relative flex items-center">
+            <div className="absolute left-4 text-accent-purple">
+              <Zap className="w-5 h-5 fill-accent-purple/20" />
+            </div>
+            <input 
+              type="text"
+              placeholder="Orchestrate Technical Goal..."
+              className="w-full bg-bg-secondary border border-border-color rounded-xl md:rounded-2xl pl-12 pr-28 md:pr-32 py-3.5 md:py-4 text-foreground focus:border-accent-purple/50 outline-none transition-smooth text-xs md:text-sm font-medium"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+            />
+            <button 
+              type="submit"
+              disabled={isIncepting}
+              className="absolute right-1.5 px-4 md:px-6 py-2 bg-accent-purple text-foreground rounded-lg md:rounded-xl font-bold text-[10px] md:text-xs hover:bg-accent-purple/80 transition-smooth disabled:opacity-50 flex items-center gap-2"
+            >
+              {isIncepting ? <Loader2 className="w-3.5 h-3.5 md:w-4 md:h-4 animate-spin" /> : <Zap className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+              <span>Incept</span>
+            </button>
+          </div>
+        </form>
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <button 
+            className="w-full md:w-auto flex items-center justify-center gap-3 px-6 py-3.5 md:py-4 glass hover:bg-bg-secondary text-xs md:text-sm font-bold text-foreground rounded-xl md:rounded-2xl transition-smooth border-accent-blue/20 hover:border-accent-blue/50"
+            onClick={async () => {
+              const title = prompt('Sanctuary Column Title:');
+              if (title) {
+                try {
+                  const { data } = await api.post(`/kanban/${id}/columns`, { title });
+                  const state = useWorkspaceStore.getState();
+                  state.setBoard([...state.board, { ...data.data, tasks: [] }]);
+                  toast.success('Column Orchestrated');
+                } catch (error) {
+                  toast.error('Orchestration failed');
+                }
+              }
+            }}
+          >
+            <Plus className="w-4 h-4 md:w-5 md:h-5 text-accent-blue" />
+            <span>Add Infrastructure Column</span>
           </button>
         </div>
       </motion.div>
@@ -112,10 +247,121 @@ export default function WorkspacePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex-1 overflow-hidden p-10 relative z-10"
+        className="flex-1 overflow-hidden p-4 md:p-10 relative z-10"
       >
         <KanbanBoard />
       </motion.div>
+
+      {/* Modals Sanctuary */}
+      <AnimatePresence>
+        {showInviteModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowInviteModal(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-lg glass-card p-10 relative z-10"
+            >
+              <button 
+                onClick={() => setShowInviteModal(false)}
+                className="absolute top-6 right-6 text-text-dim hover:text-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-accent-blue/10 rounded-full flex items-center justify-center mx-auto">
+                  <Share2 className="w-10 h-10 text-accent-blue" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground mb-2 font-display">Expand the Sanctuary</h2>
+                  <p className="text-text-secondary">Share this code with your team to orchestrate in real-time.</p>
+                </div>
+
+                <div className="bg-bg-secondary border border-border-color p-6 rounded-2xl flex items-center justify-between group">
+                  <span className="text-3xl font-mono font-bold text-foreground tracking-[0.2em]">
+                    {activeWorkspace?.invite_code || '------'}
+                  </span>
+                  <button 
+                    onClick={handleCopyCode}
+                    className="p-3 bg-accent-blue/10 text-accent-blue rounded-xl hover:bg-accent-blue hover:text-foreground transition-smooth"
+                  >
+                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-text-dim uppercase tracking-widest font-bold">
+                  Mathematically unique • Secure Gateway
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showSettingsModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettingsModal(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-lg glass-card p-10 relative z-10"
+            >
+              <button 
+                onClick={() => setShowSettingsModal(false)}
+                className="absolute top-6 right-6 text-text-dim hover:text-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-bg-secondary rounded-2xl flex items-center justify-center">
+                    <Settings className="w-7 h-7 text-text-dim" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground font-display">Workspace Settings</h2>
+                    <p className="text-text-secondary text-sm">Configure your collaborative environment.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-3 text-red-500">
+                      <ShieldAlert className="w-5 h-5" />
+                      <h3 className="font-bold">Danger Zone</h3>
+                    </div>
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      Deleting this workspace will permanently purge all columns, tasks, and member history. This action is irreversible.
+                    </p>
+                    <button 
+                      onClick={handleDeleteWorkspace}
+                      disabled={isDeleting}
+                      className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-foreground font-bold rounded-xl transition-smooth flex items-center justify-center gap-2"
+                    >
+                      {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                      <span>Purge Workspace</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

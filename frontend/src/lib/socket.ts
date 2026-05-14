@@ -29,8 +29,8 @@ class SocketService {
   }
 
   on(event: string, callback: (data: unknown) => void) {
-    if (!this.socket) return;
-    this.socket.on(event, callback);
+    const socket = this.connect();
+    socket.on(event, callback);
   }
 
   off(event: string) {
@@ -39,8 +39,8 @@ class SocketService {
   }
 
   emit(event: string, data: unknown) {
-    if (!this.socket) return;
-    this.socket.emit(event, data);
+    const socket = this.connect();
+    socket.emit(event, data);
   }
 }
 

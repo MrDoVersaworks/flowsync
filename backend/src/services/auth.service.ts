@@ -13,7 +13,7 @@ import { JWTPayload, AuthResponse, UserResponse } from '../types/auth.types.js';
 
 import { config } from '../config/index.js';
 
-const JWT_SECRET = config.auth.jwtSecret;
+const JWT_SECRET = config.jwtSecret;
 
 function generateTokens(user: { id: string; email: string }): { accessToken: string; refreshToken: string } {
   const payload: JWTPayload = { userId: user.id, email: user.email };
@@ -94,4 +94,24 @@ export async function verifyToken(token: string): Promise<JWTPayload> {
   } catch (error) {
     throw { status: 401, code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Invalid or expired token' };
   }
+}
+
+export async function deleteUser(userId: string, password?: string): Promise<void> {
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (userResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
+  }
+
+  const user = userResult[0];
+  
+  if (password) {
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    if (!isValid) {
+      throw { status: 401, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Invalid password. Account deletion aborted.' };
+    }
+  } else {
+     throw { status: 400, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Password is required for account deletion.' };
+  }
+
+  await db.delete(users).where(eq(users.id, userId));
 }

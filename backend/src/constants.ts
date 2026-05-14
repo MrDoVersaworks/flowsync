@@ -1,8 +1,10 @@
+import { config } from './config/index.js';
+
 // ============================================================
 // SYSTEM CONSTANTS
 // ============================================================
-export const PORT = process.env.PORT || 5000;
-export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const PORT = config.port;
+export const NODE_ENV = config.nodeEnv;
 
 // ============================================================
 // SECURITY & AUTH
@@ -31,6 +33,7 @@ export const ErrorCode = {
   AUTH_EXPIRED: 'AUTH_EXPIRED',
   AUTH_USER_EXISTS: 'AUTH_USER_EXISTS',
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  AUTH_NOT_FOUND: 'AUTH_NOT_FOUND',
 
   // Database
   DB_ERROR: 'DB_ERROR',

@@ -134,7 +134,7 @@ export default function KanbanBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-10 h-full overflow-x-auto pb-10 custom-scrollbar">
+        <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
           <SortableContext items={board.map((col) => col.id)} strategy={horizontalListSortingStrategy}>
             {board.map((column) => (
               <KanbanColumn key={column.id} column={column} />
@@ -152,7 +152,7 @@ export default function KanbanBoard() {
           }),
         }}>
           {activeTask ? (
-            <div className="w-80 cursor-grabbing">
+            <div className="w-[85vw] sm:w-80 md:w-96 max-w-[380px] cursor-grabbing">
               <KanbanTask task={activeTask} isOverlay />
             </div>
           ) : null}

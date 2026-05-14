@@ -9,8 +9,10 @@ const router = Router();
 // Breakdown a high-level goal into Kanban tasks
 router.post('/breakdown', validate(aiBreakdownSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
-  const { goal } = req.body;
-  const tasks = await breakdownGoal(userId, goal);
+  const { workspaceId, goal } = req.body;
+  const tasks = await breakdownGoal(userId, workspaceId, goal);
+  
+  if (req.timedout) return;
   res.status(200).json({ success: true, data: tasks });
 }));
 

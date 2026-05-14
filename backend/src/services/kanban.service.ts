@@ -4,6 +4,7 @@ import { columns, tasks, workspaceMembers } from '../db/schema.js';
 import { ErrorCode } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
+import { io } from '../index.js';
 
 // Helper to verify workspace membership
 async function verifyMembership(userId: string, workspaceId: string) {
@@ -73,7 +74,12 @@ export async function createColumn(userId: string, workspaceId: string, title: s
   }).returning();
 
   const col = inserted[0];
-  return { ...col, created_at: col.created_at.toISOString() };
+  const response = { ...col, created_at: col.created_at.toISOString() };
+  
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'COLUMN_CREATED', workspaceId });
+  
+  return response;
 }
 
 export async function createTask(userId: string, workspaceId: string, columnId: string, title: string): Promise<TaskResponse> {
@@ -100,12 +106,46 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
   }).returning();
 
   const task = inserted[0];
-  return {
+  const response = {
     ...task,
     created_at: task.created_at.toISOString(),
     updated_at: task.updated_at.toISOString(),
     due_date: task.due_date ? task.due_date.toISOString() : null,
   };
+
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'TASK_CREATED', workspaceId });
+
+  return response;
+}
+
+export async function updateTask(userId: string, workspaceId: string, taskId: string, data: any): Promise<TaskResponse> {
+  await verifyMembership(userId, workspaceId);
+
+  const updated = await db.update(tasks)
+    .set({
+      ...data,
+      updated_at: new Date(),
+    })
+    .where(eq(tasks.id, taskId))
+    .returning();
+
+  if (updated.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+  }
+
+  const task = updated[0];
+  const response = {
+    ...task,
+    created_at: task.created_at.toISOString(),
+    updated_at: task.updated_at.toISOString(),
+    due_date: task.due_date ? task.due_date.toISOString() : null,
+  };
+
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'TASK_UPDATED', workspaceId });
+
+  return response;
 }
 
 export async function moveTask(userId: string, workspaceId: string, input: TaskMoveInput): Promise<void> {
@@ -133,5 +173,23 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
     });
   }
 
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'TASK_MOVED', workspaceId });
+
   logger.info('DATABASE', `Task ${taskId} moved to column ${toColumnId} at pos ${newPosition}`);
+}
+
+export async function deleteTask(userId: string, workspaceId: string, taskId: string): Promise<void> {
+  await verifyMembership(userId, workspaceId);
+
+  const deleted = await db.delete(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
+    .returning();
+
+  if (deleted.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+  }
+
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'TASK_DELETED', workspaceId });
 }

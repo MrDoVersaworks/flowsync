@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../services/auth.service.js';
 import { ErrorCode } from '../constants.js';
-import { AuthRequest } from '../types/express.types.js';
+import { AuthRequest } from '../types/auth.types.js';
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -17,7 +17,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
 
   try {
     const decoded = await verifyToken(token);
-    req.userId = decoded.userId;
+    req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({

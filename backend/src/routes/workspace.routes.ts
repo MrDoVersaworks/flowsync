@@ -3,7 +3,8 @@ import {
   createWorkspace, 
   listUserWorkspaces, 
   getWorkspaceDetail, 
-  joinWorkspaceByCode 
+  joinWorkspaceByCode,
+  deleteWorkspace
 } from '../services/workspace.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
@@ -43,6 +44,14 @@ router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: Aut
   const { inviteCode } = req.body;
   const workspace = await joinWorkspaceByCode(userId, inviteCode);
   res.status(200).json({ success: true, data: workspace });
+}));
+
+// Delete workspace (owner only)
+router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.id as string;
+  await deleteWorkspace(userId, workspaceId);
+  res.status(200).json({ success: true, message: 'Workspace deleted' });
 }));
 
 export default router;

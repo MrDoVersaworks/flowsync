@@ -1,11 +1,12 @@
 import { Response, Router } from 'express';
-import { getBoard, createColumn, createTask, moveTask } from '../services/kanban.service.js';
+import { getBoard, createColumn, createTask, updateTask, moveTask, deleteTask } from '../services/kanban.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { 
   validate, 
   createColumnSchema, 
   createTaskSchema, 
+  updateTaskSchema,
   moveTaskSchema 
 } from '../middleware/validation.js';
 
@@ -43,6 +44,24 @@ router.post('/:workspaceId/move', validate(moveTaskSchema), asyncHandler(async (
   const workspaceId = req.params.workspaceId as string;
   const { taskId, fromColumnId, toColumnId, newPosition } = req.body;
   await moveTask(userId, workspaceId, { taskId, fromColumnId, toColumnId, newPosition });
+  res.status(200).json({ success: true });
+}));
+
+// Update task
+router.patch('/:workspaceId/tasks/:taskId', validate(updateTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const taskId = req.params.taskId as string;
+  const task = await updateTask(userId, workspaceId, taskId, req.body);
+  res.status(200).json({ success: true, data: task });
+}));
+
+// Delete task
+router.delete('/:workspaceId/tasks/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const taskId = req.params.taskId as string;
+  await deleteTask(userId, workspaceId, taskId);
   res.status(200).json({ success: true });
 }));
 
