@@ -4,26 +4,26 @@
 [![Socket.io](https://img.shields.io/badge/RealTime-Socket.io-black)](https://socket.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**FlowSync** is a production-grade, collaborative task management platform engineered for **Absolute AI Sovereignty**. It leverages a high-performance WebSocket nerve system to provide real-time synchronization across teams, while ensuring that every AI interaction is powered by the user's own encrypted credentials.
+**FlowSync** is a production-grade, collaborative task management platform engineered for **Absolute AI Sovereignty**. It leverages a high-performance WebSocket nerve system to provide near-real-time synchronization across teams, while ensuring that every AI interaction is powered by the user's own encrypted credentials.
 
 ## 🎯 Why FlowSync?
 In an era of centralized task managers, FlowSync returns control to the engineer.
 - **AI Sovereignty:** A "Bring Your Own Key" (BYOK) architecture ensures that you own your intelligence costs and data privacy.
-- **Zero-Latency Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for instant feedback.
-- **Elite Performance:** Built with a high-performance Tailwind CSS architecture, achieving near-perfect Lighthouse scores and sub-100ms interaction latency.
+- **High-Performance Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for responsive feedback.
+- **Elite Performance:** Built with a Tailwind-native architecture, optimized for high-performance and Lighthouse excellence.
 
 ## 👥 Targeted Population
 FlowSync is engineered for specific high-performance cohorts who demand speed, transparency, and data sovereignty:
-- **Agile Engineering Teams**: High-velocity teams who need zero-latency synchronization during technical sprints.
-- **AI-First Product Managers**: Leaders who want to bridge the gap between high-level project vision and executable task flows using private AI orchestration.
+- **Agile Engineering Teams**: High-velocity teams who need high-performance synchronization during technical sprints.
+- **AI-First Product Managers**: Leaders who want to bridge the gap between high-level project vision and actionable task flows using private AI orchestration.
 - **Sovereign Developers**: Privacy-conscious engineers who refuse to store sensitive project data or API credentials in centralized, multi-tenant SaaS platforms.
 
 ---
 
 ## 🚀 Key Features
 
-- **Sovereign Goal Breakdown:** High-level goals are instantly split into actionable Kanban tasks using your private Gemini instance.
-- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted instantly to the entire team via Socket.io.
+- **Sovereign Goal Breakdown:** High-level goals are decomposed into actionable Kanban tasks using your private AI configuration.
+- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted in near-real-time to the entire team via Socket.io.
 - **AES-256 Secure Vault:** Your API keys are encrypted at rest and only decrypted in volatile memory during generation sessions.
 - **Adaptive Responsive Design:** A "True Responsive" UI that utilizes CSS scroll-snapping for a focused mobile Kanban experience.
 - **DevOps Hardened:** Automated CI/CD pipelines ensure that every push is type-safe and build-ready.
