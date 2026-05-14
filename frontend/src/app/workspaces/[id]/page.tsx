@@ -193,7 +193,8 @@ export default function WorkspacePage() {
         <div className="flex flex-wrap items-center gap-4 md:gap-6">
           {/* Presence Bar */}
           <div className="flex items-center -space-x-2 order-2 sm:order-1">
-            {activeMinds.slice(0, 5).map((mind, i) => (
+            {/* Deduplicate active minds by socketId to prevent key collisions */}
+            {Array.from(new Map(activeMinds.map(m => [m.socketId, m])).values()).slice(0, 5).map((mind, i) => (
               <motion.div
                 key={mind.socketId}
                 initial={{ scale: 0, opacity: 0 }}

@@ -116,11 +116,19 @@ io.on('connection', (socket) => {
     (socket as any).workspaceId = workspaceId;
     (socket as any).userName = user.name;
 
-    // Track active minds
+    // Track active minds (Ensure no duplicates for the same socketId)
     if (!activeMinds.has(workspaceId)) {
       activeMinds.set(workspaceId, new Set());
     }
-    activeMinds.get(workspaceId)!.add({ userId: user.id, name: user.name, socketId: socket.id });
+    const minds = activeMinds.get(workspaceId)!;
+    // Remove any existing entry for this specific socketId if it exists (e.g. on re-join)
+    for (const mind of minds) {
+      if (mind.socketId === socket.id) {
+        minds.delete(mind);
+        break;
+      }
+    }
+    minds.add({ userId: user.id, name: user.name, socketId: socket.id });
 
     // Broadcast current presence to everyone in the room
     const members = Array.from(activeMinds.get(workspaceId)!);
