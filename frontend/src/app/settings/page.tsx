@@ -226,11 +226,15 @@ export default function SettingsPage() {
                     type="text"
                     value={geminiModel}
                     onChange={(e) => setGeminiModel(e.target.value)}
-                    className="auth-input pl-12"
+                    className="auth-input pl-12 pr-24"
                     placeholder="gemini-1.5-flash"
                   />
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-accent-purple transition-smooth">
                     <ShieldPlus className="w-5 h-5" />
+                  </div>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 bg-accent-purple/5 border border-accent-purple/10 rounded-lg">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-pulse" />
+                    <span className="text-[8px] font-bold text-accent-purple uppercase tracking-tighter">Active</span>
                   </div>
                 </div>
               </div>
@@ -249,21 +253,22 @@ export default function SettingsPage() {
                     </button>
                   )}
                 </div>
-                <div className="relative group flex flex-col sm:block">
+                <div className="relative group">
                   <input 
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder={hasApiKey ? "••••••••••••••••" : "Enter encrypted API key"}
-                    className={`auth-input pl-12 ${hasApiKey ? 'border-accent-cyan/30 text-accent-cyan/60' : ''} pr-4 sm:pr-40`}
+                    className={`auth-input pl-12 pr-4 ${hasApiKey ? 'border-accent-cyan/30 text-accent-cyan/60' : ''}`}
                   />
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 sm:translate-y-[-50%] text-text-dim group-focus-within:text-accent-blue transition-smooth">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-accent-blue transition-smooth">
                     <Key className="w-5 h-5" />
                   </div>
                   {hasApiKey && (
-                    <div className="sm:absolute right-4 sm:top-1/2 sm:-translate-y-1/2 mt-3 sm:mt-0 flex items-center justify-center gap-2 text-[10px] font-bold text-accent-cyan uppercase tracking-widest bg-accent-cyan/10 px-3 py-2 sm:py-1 rounded-xl sm:rounded-full border border-accent-cyan/20 sm:border-none">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-[10px] font-bold text-accent-cyan uppercase tracking-widest bg-accent-cyan/10 px-3 py-1.5 rounded-lg border border-accent-cyan/20">
                       <ShieldCheck className="w-3 h-3" />
-                      <span>Securely Anchored</span>
+                      <span className="hidden sm:inline">Securely Anchored</span>
+                      <span className="sm:hidden">Anchored</span>
                     </div>
                   )}
                 </div>

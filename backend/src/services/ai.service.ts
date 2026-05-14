@@ -119,25 +119,26 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     logger.info('AI', `Successfully orchestrated ${parsed.tasks.length} tasks for workspace: ${workspaceId}`);
     return parsed.tasks;
   } catch (error: any) {
-    logger.error('ERROR', `AI Orchestration failed`, error);
+    logger.error('ERROR', `Technical breakdown aborted`, error);
     
     // Propagate specific Google AI errors if available
     const status = error.status || 500;
-    let message = 'Orchestration failed. Please verify your AI configuration.';
+    let message = 'Technical orchestration aborted. Please verify your AI configuration.';
 
-    if (error.message?.includes('high demand') || error.status === 503) {
-      message = 'Gemini is currently experiencing high demand. Please try again in a few moments.';
+    if (error.status === 429 || error.message?.includes('quota') || error.message?.includes('429')) {
+      message = 'Sovereign quota exceeded. Please verify your Gemini API plan or wait for the rate-limit window to reset.';
+    } else if (error.message?.includes('high demand') || error.status === 503) {
+      message = 'Infrastructure is experiencing high demand. Please re-synchronize in a few moments.';
     } else if (error.message?.includes('API key') || error.status === 401 || error.status === 403) {
-      message = 'Invalid Gemini API Key. Please update it in System Configuration.';
-    } else if (error.message?.includes('model') || error.status === 404) {
-      message = `The model "${modelName}" was not found or is unavailable. Check your configuration.`;
+      message = 'Invalid Gemini credentials. Please anchor a valid API Key in System Settings.';
+    } else if (error.status === 404 || (error.message?.includes('model') && !error.message?.includes('quota'))) {
+      message = `The model "${modelName}" is unavailable or restricted. Check your configuration.`;
     } else if (error.message) {
-      // Use the raw error message if it's safe and informative
       message = error.message.split(':').pop()?.trim() || message;
     }
 
     throw { 
-      status, 
+      status: status === 429 ? 429 : status, // Preserve 429 status for the client
       code: ErrorCode.AI_SERVICE_ERROR, 
       message 
     };
