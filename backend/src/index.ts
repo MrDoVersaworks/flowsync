@@ -99,15 +99,52 @@ const io = new Server(server, {
   }
 });
 
+// Map to track active collaborative minds
+const activeMinds = new Map<string, Set<{ userId: string, name: string, socketId: string }>>();
+
 io.on('connection', (socket) => {
   logger.info('SOCKET', `Intelligence linked: ${socket.id}`);
 
-  socket.on('join-workspace', (workspaceId: string) => {
+  socket.on('join-workspace', (data: { workspaceId: string, user: { id: string, name: string } }) => {
+    const { workspaceId, user } = data;
     socket.join(workspaceId);
-    logger.info('SOCKET', `User ${socket.id} synchronized with workspace: ${workspaceId}`);
+    
+    // Store user info in socket data for cleanup
+    (socket as any).userId = user.id;
+    (socket as any).workspaceId = workspaceId;
+    (socket as any).userName = user.name;
+
+    // Track active minds
+    if (!activeMinds.has(workspaceId)) {
+      activeMinds.set(workspaceId, new Set());
+    }
+    activeMinds.get(workspaceId)!.add({ userId: user.id, name: user.name, socketId: socket.id });
+
+    // Broadcast current presence to everyone in the room
+    const members = Array.from(activeMinds.get(workspaceId)!);
+    io.to(workspaceId).emit('presence-updated', members);
+    
+    logger.info('SOCKET', `User ${user.name} synchronized with workspace: ${workspaceId}`);
   });
 
   socket.on('disconnect', () => {
+    const wsId = (socket as any).workspaceId;
+    const uId = (socket as any).userId;
+
+    if (wsId && activeMinds.has(wsId)) {
+      const minds = activeMinds.get(wsId)!;
+      for (const mind of minds) {
+        if (mind.socketId === socket.id) {
+          minds.delete(mind);
+          break;
+        }
+      }
+      
+      // Broadcast updated presence
+      const members = Array.from(minds);
+      io.to(wsId).emit('presence-updated', members);
+    }
+
     logger.info('SOCKET', `Intelligence decoupled: ${socket.id}`);
   });
 });

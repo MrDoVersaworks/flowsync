@@ -50,7 +50,8 @@ router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: Aut
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
-  await deleteWorkspace(userId, workspaceId);
+  const { password } = req.body;
+  await deleteWorkspace(userId, workspaceId, password);
   res.status(200).json({ success: true, message: 'Workspace deleted' });
 }));
 

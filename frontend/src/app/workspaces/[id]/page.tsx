@@ -20,10 +20,12 @@ export default function WorkspacePage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   const [goal, setGoal] = useState('');
   const [isIncepting, setIsIncepting] = useState(false);
+  const [activeMinds, setActiveMinds] = useState<{ userId: string, name: string, socketId: string }[]>([]);
   const [mounted, setMounted] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   const fetchBoard = async () => {
     setLoading(true);
@@ -32,7 +34,9 @@ export default function WorkspacePage() {
       setBoard(data.data.columns);
       
       socketService.connect();
-      socketService.joinWorkspace(id as string);
+      if (user) {
+        socketService.joinWorkspace(id as string, { id: user.id, name: user.name });
+      }
     } catch (error: unknown) {
       toast.error('Failed to load board');
       router.push('/workspaces');
@@ -67,8 +71,13 @@ export default function WorkspacePage() {
       }
     });
 
+    socketService.on('presence-updated', (members: any) => {
+      setActiveMinds(members);
+    });
+
     return () => {
       socketService.off('board-updated');
+      socketService.off('presence-updated');
     };
   }, [id, workspaces, mounted, isAuthenticated]);
 
@@ -104,14 +113,19 @@ export default function WorkspacePage() {
 
   const handleDeleteWorkspace = async () => {
     if (!activeWorkspace) return;
+    if (!deletePassword) {
+      toast.error('Identity verification required.');
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      await api.delete(`/workspaces/${activeWorkspace.id}`);
+      await api.delete(`/workspaces/${activeWorkspace.id}`, { data: { password: deletePassword } });
       setWorkspaces(workspaces.filter(ws => ws.id !== activeWorkspace.id));
       toast.success('Workspace Purged');
       router.push('/workspaces');
-    } catch (error) {
-      toast.error('Failed to purge workspace');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error?.message || 'Purge failed. Verify credentials.');
     } finally {
       setIsDeleting(false);
     }
@@ -170,7 +184,35 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-start sm:justify-end gap-2 md:gap-4">
+        <div className="flex items-center gap-6">
+          {/* Presence Bar */}
+          <div className="hidden lg:flex items-center -space-x-2">
+            {activeMinds.slice(0, 5).map((mind, i) => (
+              <motion.div
+                key={mind.socketId}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`w-9 h-9 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white shadow-lg relative group`}
+                style={{ backgroundColor: `hsl(${(i * 45) % 360}, 60%, 45%)` }}
+                title={mind.name}
+              >
+                {mind.name.charAt(0).toUpperCase()}
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent-cyan rounded-full border-2 border-background" />
+                
+                {/* Tooltip */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-foreground text-background text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none whitespace-nowrap">
+                  {mind.name} {mind.userId === user?.id ? '(You)' : ''}
+                </div>
+              </motion.div>
+            ))}
+            {activeMinds.length > 5 && (
+              <div className="w-9 h-9 rounded-full bg-bg-secondary border-2 border-background flex items-center justify-center text-[10px] font-bold text-text-dim">
+                +{activeMinds.length - 5}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-start sm:justify-end gap-2 md:gap-4">
           <button 
             onClick={() => setShowInviteModal(true)}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 glass hover:bg-bg-secondary text-[10px] md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-lg md:rounded-xl group"
@@ -346,10 +388,22 @@ export default function WorkspacePage() {
                     <p className="text-text-secondary text-xs leading-relaxed">
                       Deleting this workspace will permanently purge all columns, tasks, and member history. This action is irreversible.
                     </p>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest pl-1">Confirm with Password</label>
+                      <input 
+                        type="password"
+                        placeholder="••••••••"
+                        className="w-full bg-bg-secondary border border-red-500/20 rounded-xl px-4 py-3 text-foreground focus:border-red-500/50 outline-none transition-smooth text-sm"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                      />
+                    </div>
+
                     <button 
                       onClick={handleDeleteWorkspace}
-                      disabled={isDeleting}
-                      className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-foreground font-bold rounded-xl transition-smooth flex items-center justify-center gap-2"
+                      disabled={isDeleting || !deletePassword}
+                      className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-foreground font-bold rounded-xl transition-smooth flex items-center justify-center gap-2 disabled:opacity-30"
                     >
                       {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                       <span>Purge Workspace</span>

@@ -1,4 +1,5 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 import { db } from '../db/connection.js';
 import { workspaces, workspaceMembers, users } from '../db/schema.js';
 import { ErrorCode } from '../constants.js';
@@ -177,7 +178,23 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
   return toWorkspaceResponse(workspace);
 }
 
-export async function deleteWorkspace(userId: string, workspaceId: string): Promise<void> {
+export async function deleteWorkspace(userId: string, workspaceId: string, password?: string): Promise<void> {
+  // 1. Verify User Password first
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (userResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
+  }
+  const user = userResult[0];
+
+  if (!password) {
+    throw { status: 400, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Verification required. Please provide your password.' };
+  }
+
+  const isValid = await bcrypt.compare(password, user.password_hash);
+  if (!isValid) {
+    throw { status: 401, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Invalid verification credentials. Workspace purge aborted.' };
+  }
+
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
   
   if (wsResult.length === 0) {

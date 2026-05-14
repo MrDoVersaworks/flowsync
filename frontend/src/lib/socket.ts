@@ -22,9 +22,9 @@ class SocketService {
     }
   }
 
-  joinWorkspace(workspaceId: string) {
+  joinWorkspace(workspaceId: string, user: { id: string, name: string }) {
     if (this.socket) {
-      this.socket.emit(SocketEvent.JOIN_WORKSPACE, workspaceId);
+      this.socket.emit(SocketEvent.JOIN_WORKSPACE, { workspaceId, user });
     }
   }
 
