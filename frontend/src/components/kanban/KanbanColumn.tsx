@@ -4,7 +4,7 @@ import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Column, Task } from '@/store/useWorkspaceStore';
 import KanbanTask from './KanbanTask';
-import { Plus, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Trash2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -91,41 +91,72 @@ export default function KanbanColumn({ column }: Props) {
           ))}
         </SortableContext>
         
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={async () => {
-            const title = prompt('Technical Task Title:');
-            if (title) {
-              try {
-                const { api } = await import('@/lib/api');
-                const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
-                const { toast } = await import('react-hot-toast');
-                
-                const { data } = await api.post('/kanban/tasks', {
-                  columnId: column.id,
-                  title,
-                  description: '',
-                  priority: 'medium',
-                  position: column.tasks.length
-                });
+        <div className="flex items-center gap-2">
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={async () => {
+              const title = prompt('Technical Task Title:');
+              if (title) {
+                try {
+                  const { api } = await import('@/lib/api');
+                  const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
+                  const { toast } = await import('react-hot-toast');
+                  
+                  const { data } = await api.post('/kanban/tasks', {
+                    columnId: column.id,
+                    title,
+                    description: '',
+                    priority: 'medium',
+                    position: column.tasks.length
+                  });
 
-                const state = useWorkspaceStore.getState();
-                const newBoard = state.board.map(col => 
-                  col.id === column.id ? { ...col, tasks: [...col.tasks, data.data] } : col
-                );
-                state.setBoard(newBoard);
-                toast.success('Task Incepted');
-              } catch (error) {
-                console.error(error);
+                  const state = useWorkspaceStore.getState();
+                  const newBoard = state.board.map(col => 
+                    col.id === column.id ? { ...col, tasks: [...col.tasks, data.data] } : col
+                  );
+                  state.setBoard(newBoard);
+                  toast.success('Task Incepted');
+                } catch (error) {
+                  console.error(error);
+                }
               }
-            }
-          }}
-          className="w-full py-4 border-2 border-dashed border-border-color rounded-2xl text-text-dim hover:text-foreground hover:border-accent-blue/50 hover:bg-bg-secondary transition-smooth flex items-center justify-center gap-2 group/add"
-        >
-          <Plus className="w-5 h-5 group-hover/add:rotate-90 transition-smooth" />
-          <span className="text-sm font-bold">Incept Task</span>
-        </motion.button>
+            }}
+            className="flex-1 py-3 md:py-4 border-2 border-dashed border-border-color rounded-2xl text-text-dim hover:text-foreground hover:border-accent-blue/50 hover:bg-bg-secondary transition-smooth flex items-center justify-center gap-2 group/add"
+          >
+            <Plus className="w-4 h-4 md:w-5 h-5 group-hover/add:rotate-90 transition-smooth" />
+            <span className="text-xs md:text-sm font-bold">Incept Task</span>
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={async () => {
+              const goal = prompt(`Orchestrate for "${column.title}":\n(What specific tasks should be generated?)`);
+              if (goal) {
+                try {
+                  const { api } = await import('@/lib/api');
+                  const { toast } = await import('react-hot-toast');
+                  
+                  toast.loading('Orchestrating column focus...', { id: 'ai-column' });
+                  await api.post('/ai/breakdown', {
+                    workspaceId: column.workspace_id,
+                    goal,
+                    targetColumnId: column.id
+                  });
+                  toast.success('Column Orchestrated', { id: 'ai-column' });
+                } catch (error) {
+                  toast.error('Orchestration failed', { id: 'ai-column' });
+                  console.error(error);
+                }
+              }
+            }}
+            className="w-12 h-11 md:h-14 border-2 border-dashed border-accent-cyan/30 rounded-2xl text-accent-cyan hover:bg-accent-cyan/10 transition-smooth flex items-center justify-center"
+            title="Targeted AI Inception"
+          >
+            <Sparkles className="w-4 h-4 md:w-5 h-5" />
+          </motion.button>
+        </div>
       </div>
     </div>
   );

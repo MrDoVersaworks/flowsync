@@ -12,7 +12,7 @@ import { tasks, columns } from '../db/schema.js';
 import { io } from '../index.js';
 import { getBoard, createColumn } from './kanban.service.js';
 
-export async function breakdownGoal(userId: string, workspaceId: string, goal: string): Promise<AITask[]> {
+export async function breakdownGoal(userId: string, workspaceId: string, goal: string, targetColumnId?: string): Promise<AITask[]> {
   // 1. Get user configuration
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (userResult.length === 0) {
@@ -36,6 +36,8 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     return `Column: [${col.title}]\n${taskList || '(Empty)'}`;
   }).join('\n\n');
 
+  const targetColumnData = targetColumnId ? board.columns.find(c => c.id === targetColumnId) : null;
+
   const prompt = `
     You are a technical project orchestrator. 
     You are working within a workspace that currently has the following structure:
@@ -43,18 +45,20 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     ${contextString}
     ---
 
+    ${targetColumnData ? `CRITICAL: You are specifically targeting the column "[${targetColumnData.title}]". All generated tasks must be relevant to this column's purpose and existing tasks.` : ''}
+
     Your goal is to break down the following NEW technical objective:
     Goal: "${goal}"
 
     Instructions:
     1. Break it down into 5 to 8 actionable, technical tasks.
-    2. If the goal is a COMPLETELY NEW project/category compared to existing tasks, suggest a new column name for it (e.g., "Architecture", "Foundation", "Logic").
-    3. If the goal fits into an existing column (like "Backlog" or "In Progress"), use that column title.
+    ${targetColumnData ? `2. ALL tasks will be placed in the "[${targetColumnData.title}]" column.` : `2. If the goal is a COMPLETELY NEW project/category compared to existing tasks, suggest a new column name for it (e.g., "Architecture", "Foundation", "Logic").
+    3. If the goal fits into an existing column (like "Backlog" or "In Progress"), use that column title.`}
     4. Ensure the new tasks DO NOT duplicate existing ones.
 
     Return ONLY a JSON object with this exact structure:
     {
-      "suggested_column_title": "Title of the column these tasks should go into",
+      "suggested_column_title": "${targetColumnData ? targetColumnData.title : 'Title of the column these tasks should go into'}",
       "tasks": [
         {
           "title": "Task title",
@@ -77,19 +81,23 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     }
 
     // 4. Grounding: Find or Create the suggested column
-    const suggestedTitle = parsed.suggested_column_title || 'Backlog';
-    
-    let targetColumn = await db.select().from(columns)
-      .where(and(eq(columns.workspace_id, workspaceId), eq(columns.title, suggestedTitle)))
-      .limit(1);
-    
     let columnId: string;
-    if (targetColumn.length === 0) {
-      // Create the new column using the service to handle position/events
-      const newCol = await createColumn(userId, workspaceId, suggestedTitle);
-      columnId = newCol.id;
+    
+    if (targetColumnId) {
+      columnId = targetColumnId;
     } else {
-      columnId = targetColumn[0].id;
+      const suggestedTitle = parsed.suggested_column_title || 'Backlog';
+      let targetColumn = await db.select().from(columns)
+        .where(and(eq(columns.workspace_id, workspaceId), eq(columns.title, suggestedTitle)))
+        .limit(1);
+      
+      if (targetColumn.length === 0) {
+        // Create the new column using the service to handle position/events
+        const newCol = await createColumn(userId, workspaceId, suggestedTitle);
+        columnId = newCol.id;
+      } else {
+        columnId = targetColumn[0].id;
+      }
     }
 
     // 4. Infrastructure Inception: Bulk Insert Tasks

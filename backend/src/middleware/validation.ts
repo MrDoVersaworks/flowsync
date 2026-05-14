@@ -80,4 +80,5 @@ export const updateSettingsSchema = z.object({
 export const aiBreakdownSchema = z.object({
   workspaceId: z.string().uuid('Invalid workspace ID'),
   goal: z.string().min(10, 'Goal must be at least 10 characters').max(5000, 'Goal too long'),
+  targetColumnId: z.string().uuid('Invalid column ID').optional(),
 });
