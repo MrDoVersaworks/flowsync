@@ -24,7 +24,7 @@ export default function GuidePage() {
       border: 'border-accent-purple/20',
       title: 'Collaborate',
       subtitle: 'Synchronizing Distributed Minds',
-      content: 'FlowSync is built for convergence. Share your unique 8-character invite code with team members to bring them into the sanctuary. Once joined, every action - from task moves to specification edits - is broadcasted instantaneously across the WebSocket nerve system. No manual refreshing is required.'
+      content: 'FlowSync is built for convergence. Share your unique 8-character invite code with team members to bring them into the sanctuary. Once joined, every action - from task moves to specification edits - is broadcasted in near-real-time across the WebSocket nerve system. No manual refreshing is required.'
     },
     {
       id: 'synchronize',

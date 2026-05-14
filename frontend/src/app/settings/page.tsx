@@ -209,7 +209,13 @@ export default function SettingsPage() {
             <form onSubmit={handleSaveSettings} className="space-y-8">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold">Generation Model</label>
+                  <div className="flex items-center gap-3">
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold">Generation Model</label>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-accent-purple/5 border border-accent-purple/10 rounded-lg">
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-pulse" />
+                      <span className="text-[8px] font-bold text-accent-purple uppercase tracking-tighter">Active</span>
+                    </div>
+                  </div>
                   {geminiModel !== 'gemini-1.5-flash' && (
                     <button 
                       type="button"
@@ -217,7 +223,7 @@ export default function SettingsPage() {
                       className="text-[10px] flex items-center gap-1.5 text-accent-blue hover:text-accent-cyan transition-smooth uppercase font-bold"
                     >
                       <RotateCcw className="w-3 h-3" />
-                      Reset to Default
+                      Reset
                     </button>
                   )}
                 </div>
@@ -226,22 +232,26 @@ export default function SettingsPage() {
                     type="text"
                     value={geminiModel}
                     onChange={(e) => setGeminiModel(e.target.value)}
-                    className="auth-input pl-12 pr-24"
+                    className="auth-input pl-12"
                     placeholder="gemini-1.5-flash"
                   />
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-accent-purple transition-smooth">
                     <ShieldPlus className="w-5 h-5" />
-                  </div>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 bg-accent-purple/5 border border-accent-purple/10 rounded-lg">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-pulse" />
-                    <span className="text-[8px] font-bold text-accent-purple uppercase tracking-tighter">Active</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold">Gemini API Key</label>
+                  <div className="flex items-center gap-3">
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold">Gemini API Key</label>
+                    {hasApiKey && (
+                      <div className="flex items-center gap-2 text-[8px] font-bold text-accent-cyan uppercase tracking-widest bg-accent-cyan/10 px-2 py-0.5 rounded-lg border border-accent-cyan/20">
+                        <ShieldCheck className="w-2.5 h-2.5" />
+                        <span>Anchored</span>
+                      </div>
+                    )}
+                  </div>
                   {hasApiKey && (
                     <button 
                       type="button"
@@ -249,7 +259,7 @@ export default function SettingsPage() {
                       className="text-[10px] flex items-center gap-1.5 text-red-500 hover:text-red-400 transition-smooth uppercase font-bold"
                     >
                       <RotateCcw className="w-3 h-3" />
-                      Purge Key
+                      Purge
                     </button>
                   )}
                 </div>
@@ -264,13 +274,6 @@ export default function SettingsPage() {
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim group-focus-within:text-accent-blue transition-smooth">
                     <Key className="w-5 h-5" />
                   </div>
-                  {hasApiKey && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-[10px] font-bold text-accent-cyan uppercase tracking-widest bg-accent-cyan/10 px-3 py-1.5 rounded-lg border border-accent-cyan/20">
-                      <ShieldCheck className="w-3 h-3" />
-                      <span className="hidden sm:inline">Securely Anchored</span>
-                      <span className="sm:hidden">Anchored</span>
-                    </div>
-                  )}
                 </div>
                 <p className="text-[10px] text-text-dim leading-relaxed">
                   Your key is never stored in plain text. It is encrypted with AES-256-GCM before being anchored to your profile.

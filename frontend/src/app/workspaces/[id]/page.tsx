@@ -190,29 +190,29 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6">
           {/* Presence Bar */}
-          <div className="hidden lg:flex items-center -space-x-2">
+          <div className="flex items-center -space-x-2 order-2 sm:order-1">
             {activeMinds.slice(0, 5).map((mind, i) => (
               <motion.div
                 key={mind.socketId}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className={`w-9 h-9 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white shadow-lg relative group`}
+                className={`w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-background flex items-center justify-center text-[8px] md:text-[10px] font-bold text-white shadow-lg relative group`}
                 style={{ backgroundColor: `hsl(${(i * 45) % 360}, 60%, 45%)` }}
                 title={mind.name}
               >
                 {mind.name.charAt(0).toUpperCase()}
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent-cyan rounded-full border-2 border-background" />
+                <div className="absolute bottom-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-accent-cyan rounded-full border-2 border-background" />
                 
                 {/* Tooltip */}
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-foreground text-background text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none whitespace-nowrap">
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-foreground text-background text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none whitespace-nowrap z-50">
                   {mind.name} {mind.userId === user?.id ? '(You)' : ''}
                 </div>
               </motion.div>
             ))}
             {activeMinds.length > 5 && (
-              <div className="w-9 h-9 rounded-full bg-bg-secondary border-2 border-background flex items-center justify-center text-[10px] font-bold text-text-dim">
+              <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-bg-secondary border-2 border-background flex items-center justify-center text-[8px] md:text-[10px] font-bold text-text-dim">
                 +{activeMinds.length - 5}
               </div>
             )}

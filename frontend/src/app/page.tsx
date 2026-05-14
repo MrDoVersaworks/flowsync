@@ -20,7 +20,7 @@ export default function Home() {
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
   const features = [
-    { icon: Zap, color: 'text-accent-blue', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for zero-latency sync.' },
+    { icon: Zap, color: 'text-accent-blue', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for high-performance sync.' },
     { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via sovereign AI orchestration.' },
     { icon: ShieldCheck, color: 'text-accent-cyan', title: 'AES-256 Vault', desc: 'Sovereign key management with GCM-mode local encryption.' },
     { icon: Cpu, color: 'text-accent-blue', title: 'BYOK Logic', desc: 'Anchor your own Gemini API keys for absolute data sovereignty.' },
