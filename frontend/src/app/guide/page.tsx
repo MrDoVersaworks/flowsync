@@ -34,7 +34,7 @@ export default function GuidePage() {
       border: 'border-accent-cyan/20',
       title: 'Synchronize',
       subtitle: 'AI-Driven Goal Decomposition',
-      content: 'Transform high-level vision into executable task flows using our AI Inception engine. Simply input a technical goal, and the system will call upon Gemini 1.5 Pro to architect a detailed Kanban board. These tasks are not just suggestions; they are physically created in your backlog, ready for immediate execution.'
+      content: 'Transform high-level vision into an actionable technical roadmap using our AI Inception engine. Simply input a technical goal, and the system will call upon your configured AI model to architect a detailed blueprint of Kanban tasks. These tasks serve as a structured guide for your own implementation, providing the strategic framework needed to build complex systems.'
     }
   ];
 

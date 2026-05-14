@@ -21,11 +21,11 @@ export default function Home() {
 
   const features = [
     { icon: Zap, color: 'text-accent-blue', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for zero-latency sync.' },
-    { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via Gemini 1.5 Pro orchestration.' },
+    { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via sovereign AI orchestration.' },
     { icon: ShieldCheck, color: 'text-accent-cyan', title: 'AES-256 Vault', desc: 'Sovereign key management with GCM-mode local encryption.' },
     { icon: Cpu, color: 'text-accent-blue', title: 'BYOK Logic', desc: 'Anchor your own Gemini API keys for absolute data sovereignty.' },
     { icon: Share2, color: 'text-accent-purple', title: 'Collaborative Sync', desc: 'Unique invite code identifiers for secure workspace joining.' },
-    { icon: Globe, color: 'text-accent-cyan', title: 'Global Edge', desc: 'Optimized for high-performance distributed technical execution.' }
+    { icon: Globe, color: 'text-accent-cyan', title: 'Global Edge', desc: 'Optimized for high-performance distributed technical orchestration.' }
   ];
 
   return (
@@ -89,7 +89,7 @@ export default function Home() {
             className="text-xl md:text-3xl text-text-secondary max-w-4xl mx-auto font-light leading-relaxed tracking-tight"
           >
             The sovereign technical sanctuary for elite engineering teams. 
-            AI-driven goal decomposition meets deterministic live-sync performance.
+            AI-driven blueprinting meets deterministic live-sync orchestration.
           </motion.p>
 
           <motion.div 
