@@ -139,6 +139,25 @@ io.on('connection', (socket) => {
     logger.info('SOCKET', `User ${user.name} synchronized with workspace: ${workspaceId}`);
   });
 
+  socket.on(SocketEvent.LEAVE_WORKSPACE, () => {
+    const wsId = (socket as any).workspaceId;
+    if (wsId && activeMinds.has(wsId)) {
+      const minds = activeMinds.get(wsId)!;
+      for (const mind of minds) {
+        if (mind.socketId === socket.id) {
+          minds.delete(mind);
+          break;
+        }
+      }
+      const members = Array.from(new Map(
+        Array.from(minds).map(m => [m.userId, m])
+      ).values());
+      io.to(wsId).emit(SocketEvent.PRESENCE_UPDATED, members);
+      socket.leave(wsId);
+      logger.info('SOCKET', `Intelligence decoupled (Explicit Leave): ${socket.id}`);
+    }
+  });
+
   socket.on('disconnect', () => {
     const wsId = (socket as any).workspaceId;
     const uId = (socket as any).userId;

@@ -1,5 +1,6 @@
 export const SocketEvent = {
   JOIN_WORKSPACE: 'join_workspace',
+  LEAVE_WORKSPACE: 'leave_workspace',
   BOARD_UPDATED: 'board_updated',
   PRESENCE_UPDATED: 'presence_updated',
 };

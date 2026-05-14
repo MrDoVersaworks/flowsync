@@ -82,6 +82,7 @@ export default function WorkspacePage() {
     });
 
     return () => {
+      socketService.emit(SocketEvent.LEAVE_WORKSPACE, { workspaceId: id });
       socketService.off(SocketEvent.BOARD_UPDATED);
       socketService.off(SocketEvent.PRESENCE_UPDATED);
     };
