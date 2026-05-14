@@ -130,8 +130,10 @@ io.on('connection', (socket) => {
     }
     minds.add({ userId: user.id, name: user.name, socketId: socket.id });
 
-    // Broadcast current presence to everyone in the room
-    const members = Array.from(activeMinds.get(workspaceId)!);
+    // Broadcast current presence to everyone in the room (Deduplicate by userId)
+    const members = Array.from(new Map(
+      Array.from(activeMinds.get(workspaceId)!).map(m => [m.userId, m])
+    ).values());
     io.to(workspaceId).emit(SocketEvent.PRESENCE_UPDATED, members);
     
     logger.info('SOCKET', `User ${user.name} synchronized with workspace: ${workspaceId}`);
@@ -150,8 +152,10 @@ io.on('connection', (socket) => {
         }
       }
       
-      // Broadcast updated presence
-      const members = Array.from(minds);
+      // Broadcast updated presence (Deduplicate by userId)
+      const members = Array.from(new Map(
+        Array.from(minds).map(m => [m.userId, m])
+      ).values());
       io.to(wsId).emit(SocketEvent.PRESENCE_UPDATED, members);
     }
 

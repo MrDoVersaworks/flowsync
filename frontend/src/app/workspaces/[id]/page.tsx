@@ -193,10 +193,10 @@ export default function WorkspacePage() {
         <div className="flex flex-wrap items-center gap-4 md:gap-6">
           {/* Presence Bar */}
           <div className="flex items-center -space-x-2 order-2 sm:order-1">
-            {/* Deduplicate active minds by socketId to prevent key collisions */}
-            {Array.from(new Map(activeMinds.map(m => [m.socketId, m])).values()).slice(0, 5).map((mind, i) => (
+            {/* Deduplicate active minds by userId to prevent ghost tokens from multiple tabs */}
+            {Array.from(new Map(activeMinds.map(m => [m.userId, m])).values()).slice(0, 5).map((mind, i) => (
               <motion.div
-                key={mind.socketId}
+                key={mind.userId}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 className={`w-7 h-7 md:w-9 md:h-9 rounded-full border-2 border-background flex items-center justify-center text-[8px] md:text-[10px] font-bold text-white shadow-lg relative group`}
@@ -212,9 +212,9 @@ export default function WorkspacePage() {
                 </div>
               </motion.div>
             ))}
-            {activeMinds.length > 5 && (
+            {Array.from(new Map(activeMinds.map(m => [m.userId, m])).values()).length > 5 && (
               <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-bg-secondary border-2 border-background flex items-center justify-center text-[8px] md:text-[10px] font-bold text-text-dim">
-                +{activeMinds.length - 5}
+                +{Array.from(new Map(activeMinds.map(m => [m.userId, m])).values()).length - 5}
               </div>
             )}
           </div>
