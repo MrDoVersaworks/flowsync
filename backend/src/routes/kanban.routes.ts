@@ -1,5 +1,5 @@
 import { Response, Router } from 'express';
-import { getBoard, createColumn, createTask, updateTask, moveTask, deleteTask } from '../services/kanban.service.js';
+import { getBoard, createColumn, createTask, updateTask, moveTask, deleteTask, deleteColumn } from '../services/kanban.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { 
@@ -62,6 +62,15 @@ router.delete('/:workspaceId/tasks/:taskId', asyncHandler(async (req: AuthReques
   const workspaceId = req.params.workspaceId as string;
   const taskId = req.params.taskId as string;
   await deleteTask(userId, workspaceId, taskId);
+  res.status(200).json({ success: true });
+}));
+
+// Delete column
+router.delete('/:workspaceId/columns/:columnId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.workspaceId as string;
+  const columnId = req.params.columnId as string;
+  await deleteColumn(userId, workspaceId, columnId);
   res.status(200).json({ success: true });
 }));
 

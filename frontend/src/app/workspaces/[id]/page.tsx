@@ -141,49 +141,48 @@ export default function WorkspacePage() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col lg:flex-row lg:items-center justify-between px-4 md:px-10 py-6 md:py-8 glass border-b border-border-color relative z-10 gap-6"
+        className="flex flex-col justify-between px-4 md:px-10 py-4 md:py-8 glass border-b border-border-color relative z-10 gap-4 md:gap-6 lg:flex-row lg:items-center"
       >
-        <div className="flex items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-3 md:gap-8">
           <button 
             onClick={() => router.push('/workspaces')}
-            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-xl md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
+            className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-lg md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
             title="Back to Sanctuary"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           
           <div className="flex items-center gap-3 md:gap-5">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-accent-blue/10 rounded-xl md:rounded-2xl flex items-center justify-center">
+            <div className="hidden min-[400px]:flex w-9 h-9 md:w-12 md:h-12 bg-accent-blue/10 rounded-lg md:rounded-2xl items-center justify-center">
               <Layout className="w-5 h-5 md:w-6 md:h-6 text-accent-blue" />
             </div>
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-foreground leading-none mb-1 md:mb-2 font-display tracking-tight">
+              <h1 className="text-lg md:text-3xl font-bold text-foreground leading-none mb-1 md:mb-2 font-display tracking-tight">
                 {activeWorkspace?.name || 'Sanctuary'}
               </h1>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-accent-cyan animate-pulse" />
-                <span className="text-[8px] md:text-[10px] font-bold text-text-dim tracking-widest uppercase">
-                  Production Environment • Live Sync
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-accent-cyan animate-pulse" />
+                <span className="text-[7px] md:text-[10px] font-bold text-text-dim tracking-widest uppercase">
+                  Live Sync
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 md:gap-4">
+        <div className="flex items-center justify-start sm:justify-end gap-2 md:gap-4">
           <button 
             onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-3 px-4 md:px-6 py-2.5 md:py-3 glass hover:bg-bg-secondary text-xs md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-xl group"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 glass hover:bg-bg-secondary text-[10px] md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-lg md:rounded-xl group"
           >
-            <Share2 className="w-4 h-4 group-hover:scale-110 transition-smooth" />
-            <span className="hidden sm:inline">Invite Collaborative Minds</span>
-            <span className="sm:hidden">Invite</span>
+            <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-smooth" />
+            <span>Invite</span>
           </button>
           <button 
             onClick={() => setShowSettingsModal(true)}
-            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-xl md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
+            className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-lg md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
           >
-            <Settings className="w-5 h-5 md:w-6 md:h-6 text-foreground" />
+            <Settings className="w-4 h-4 md:w-6 md:h-6 text-foreground" />
           </button>
         </div>
       </motion.div>

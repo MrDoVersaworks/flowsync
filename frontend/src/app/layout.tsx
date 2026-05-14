@@ -6,6 +6,8 @@ import ThemeProvider from '@/components/shared/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
+import PageTransition from '@/components/layout/PageTransition';
+
 export const metadata = {
   title: 'FlowSync | Sovereign AI Workflow Orchestration',
   description: 'Manage your workspaces, kanban boards, and AI breakdowns with absolute sovereignty.',
@@ -35,7 +37,9 @@ export default function RootLayout({
           <div className="relative flex min-h-screen flex-col">
             <Navbar />
             <main className="flex-1 overflow-x-hidden pt-16">
-              {children}
+              <PageTransition>
+                {children}
+              </PageTransition>
             </main>
             <Toaster 
               position="bottom-right"

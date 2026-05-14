@@ -4,7 +4,7 @@ import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { Column, Task } from '@/store/useWorkspaceStore';
 import KanbanTask from './KanbanTask';
-import { Plus, MoreHorizontal } from 'lucide-react';
+import { Plus, MoreHorizontal, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -53,9 +53,34 @@ export default function KanbanColumn({ column }: Props) {
             {column.tasks.length}
           </span>
         </div>
-        <button className="text-text-dim hover:text-foreground transition-smooth p-1">
-          <MoreHorizontal className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (confirm(`Purge the "${column.title}" column and all its contents? This action is irreversible.`)) {
+                try {
+                  const { api } = await import('@/lib/api');
+                  const { useWorkspaceStore } = await import('@/store/useWorkspaceStore');
+                  const { toast } = await import('react-hot-toast');
+                  
+                  await api.delete(`/kanban/${column.workspace_id}/columns/${column.id}`);
+                  const state = useWorkspaceStore.getState();
+                  state.setBoard(state.board.filter(col => col.id !== column.id));
+                  toast.success('Column Purged');
+                } catch (error) {
+                  console.error(error);
+                }
+              }
+            }}
+            className="text-text-dim hover:text-red-500 transition-smooth p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            title="Purge Column"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button className="text-text-dim hover:text-foreground transition-smooth p-1">
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Task List Container */}

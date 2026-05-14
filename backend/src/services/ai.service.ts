@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getDecryptedApiKey } from './settings.service.js';
 import { db } from '../db/connection.js';
 import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '../utils/logger.js';
 import { ErrorCode, DEFAULT_AI_MODEL } from '../constants.js';
 
@@ -10,6 +10,7 @@ import { AITask } from '../types/ai.types.js';
 
 import { tasks, columns } from '../db/schema.js';
 import { io } from '../index.js';
+import { getBoard, createColumn } from './kanban.service.js';
 
 export async function breakdownGoal(userId: string, workspaceId: string, goal: string): Promise<AITask[]> {
   // 1. Get user configuration
@@ -28,13 +29,32 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: modelName });
 
+  // 3. Gather Context (Grounding)
+  const board = await getBoard(userId, workspaceId);
+  const contextString = board.columns.map(col => {
+    const taskList = col.tasks.map(t => `- ${t.title}`).join('\n');
+    return `Column: [${col.title}]\n${taskList || '(Empty)'}`;
+  }).join('\n\n');
+
   const prompt = `
     You are a technical project orchestrator. 
-    Break down the following goal into 5 to 8 actionable, technical Kanban tasks.
+    You are working within a workspace that currently has the following structure:
+    ---
+    ${contextString}
+    ---
+
+    Your goal is to break down the following NEW technical objective:
     Goal: "${goal}"
 
-    Return ONLY a JSON object with the following structure:
+    Instructions:
+    1. Break it down into 5 to 8 actionable, technical tasks.
+    2. If the goal is a COMPLETELY NEW project/category compared to existing tasks, suggest a new column name for it (e.g., "Architecture", "Foundation", "Logic").
+    3. If the goal fits into an existing column (like "Backlog" or "In Progress"), use that column title.
+    4. Ensure the new tasks DO NOT duplicate existing ones.
+
+    Return ONLY a JSON object with this exact structure:
     {
+      "suggested_column_title": "Title of the column these tasks should go into",
       "tasks": [
         {
           "title": "Task title",
@@ -56,19 +76,18 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
       throw new Error('Invalid AI response format');
     }
 
-    // 3. Grounding: Find or Create 'Backlog' column
+    // 4. Grounding: Find or Create the suggested column
+    const suggestedTitle = parsed.suggested_column_title || 'Backlog';
+    
     let targetColumn = await db.select().from(columns)
-      .where(eq(columns.workspace_id, workspaceId))
+      .where(and(eq(columns.workspace_id, workspaceId), eq(columns.title, suggestedTitle)))
       .limit(1);
     
     let columnId: string;
     if (targetColumn.length === 0) {
-      const newCol = await db.insert(columns).values({
-        workspace_id: workspaceId,
-        title: 'Backlog',
-        position: 0
-      }).returning();
-      columnId = newCol[0].id;
+      // Create the new column using the service to handle position/events
+      const newCol = await createColumn(userId, workspaceId, suggestedTitle);
+      columnId = newCol.id;
     } else {
       columnId = targetColumn[0].id;
     }

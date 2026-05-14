@@ -193,3 +193,26 @@ export async function deleteTask(userId: string, workspaceId: string, taskId: st
   // Real-Time Broadcast
   io.to(workspaceId).emit('board-updated', { type: 'TASK_DELETED', workspaceId });
 }
+
+export async function deleteColumn(userId: string, workspaceId: string, columnId: string): Promise<void> {
+  await verifyMembership(userId, workspaceId);
+
+  // Cascading Delete: Tasks in the column are purged automatically by the DB if FK is set,
+  // but we'll do it explicitly here for absolute certainty in this architecture.
+  await db.transaction(async (tx) => {
+    await tx.delete(tasks).where(and(eq(tasks.column_id, columnId), eq(tasks.workspace_id, workspaceId)));
+    
+    const deleted = await tx.delete(columns)
+      .where(and(eq(columns.id, columnId), eq(columns.workspace_id, workspaceId)))
+      .returning();
+
+    if (deleted.length === 0) {
+      throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Column not found' };
+    }
+  });
+
+  // Real-Time Broadcast
+  io.to(workspaceId).emit('board-updated', { type: 'COLUMN_DELETED', workspaceId });
+  
+  logger.info('DATABASE', `Column ${columnId} purged from workspace ${workspaceId}`);
+}
