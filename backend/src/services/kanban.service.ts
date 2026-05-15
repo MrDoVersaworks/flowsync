@@ -51,7 +51,7 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
         AND ${taskComments.user_id} != ${userId}
         AND ${taskComments.created_at} > COALESCE(
           (SELECT ${taskReads.last_read_at} FROM ${taskReads} WHERE ${taskReads.user_id} = ${userId} AND ${taskReads.task_id} = ${tasks.id}),
-          '1970-01-01'::timestamp
+          '1970-01-01'::timestamptz
         )
       )`
     })
@@ -70,7 +70,8 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
           created_at: t.created_at.toISOString(),
           updated_at: t.updated_at.toISOString(),
           due_date: t.due_date ? t.due_date.toISOString() : null,
-          comment_count: t.comment_count
+          comment_count: t.comment_count,
+          unread_count: t.unread_count
         })),
     })),
   };

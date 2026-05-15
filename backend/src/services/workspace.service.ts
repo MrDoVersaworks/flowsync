@@ -95,7 +95,7 @@ export async function listUserWorkspaces(
         AND ${taskComments.user_id} != ${userId}
         AND ${taskComments.created_at} > COALESCE(
           (SELECT ${taskReads.last_read_at} FROM ${taskReads} WHERE ${taskReads.user_id} = ${userId} AND ${taskReads.task_id} = ${tasks.id}),
-          '1970-01-01'::timestamp
+          '1970-01-01'::timestamptz
         )
       )`
     })

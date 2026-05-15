@@ -38,7 +38,14 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
   useEffect(() => {
     if (isOpen) {
       fetchComments();
-      api.post(`/comments/read/${task.id}`).catch(() => {});
+      api.post(`/comments/read/${task.id}`).then(() => {
+        // Clear unread count locally
+        const newBoard = board.map(col => ({
+          ...col,
+          tasks: col.tasks.map(t => t.id === task.id ? { ...t, unread_count: 0 } : t)
+        }));
+        setBoard(newBoard);
+      }).catch(() => {});
       
       // Real-time comment refresh
       const handleBoardUpdate = (data: any) => {

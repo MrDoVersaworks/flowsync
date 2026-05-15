@@ -68,24 +68,23 @@ export default function WorkspacePage() {
       });
     }
 
-    socketService.on(SocketEvent.BOARD_UPDATED, (data: any) => {
+    const handleUpdate = (data: any) => {
       if (data?.workspaceId === id) {
         fetchBoard();
-        // If it's a member update, also refresh workspace detail for roles
         if (data?.type === 'MEMBER_UPDATED' || data?.type === 'MEMBER_PURGED') {
           api.get(`/workspaces/${id}`).then(({ data }) => {
             setActiveWorkspace(data.data);
           }).catch(() => {});
         }
       }
-    });
+    };
 
+    socketService.on(SocketEvent.BOARD_UPDATED, handleUpdate);
     socketService.on(SocketEvent.PRESENCE_UPDATED, (members: any) => {
       setActiveMinds(members);
     });
 
     return () => {
-      socketService.emit(SocketEvent.LEAVE_WORKSPACE, { workspaceId: id });
       socketService.off(SocketEvent.BOARD_UPDATED);
       socketService.off(SocketEvent.PRESENCE_UPDATED);
     };
