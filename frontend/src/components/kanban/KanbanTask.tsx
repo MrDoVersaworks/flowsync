@@ -62,9 +62,12 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
       >
         {/* Intelligence Alert Lighting */}
         {(Number(task.unread_count) || 0) > 0 && (
-          <div className="absolute -top-1 -right-1 flex items-center justify-center z-30">
+          <div 
+            className="absolute -top-1 -right-1 flex items-center justify-center z-30"
+            title={`${task.unread_count} Unread Technical Notes`}
+          >
             <div className="w-4 h-4 bg-accent-cyan rounded-full animate-ping opacity-50 absolute" />
-            <div className="w-4 h-4 bg-accent-cyan rounded-full shadow-[0_0_15px_rgba(34,211,238,0.8)] relative flex items-center justify-center text-[8px] font-black text-black">
+            <div className="w-5 h-5 bg-accent-cyan rounded-full shadow-[0_0_15px_rgba(34,211,238,0.8)] relative flex items-center justify-center text-[9px] font-black text-black">
               {task.unread_count}
             </div>
           </div>
@@ -138,7 +141,7 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
               {(Number(task.unread_count) || 0) > 0 && (
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded-md border border-accent-cyan/20 animate-pulse">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan" />
-                  <span>Intelligence Alert</span>
+                  <span>Unread Intelligence</span>
                 </div>
               )}
               {(!task.unread_count || task.unread_count === 0) && (task.comment_count ?? 0) > 0 && (

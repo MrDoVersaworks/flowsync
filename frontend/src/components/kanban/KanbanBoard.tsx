@@ -18,7 +18,7 @@ import {
   SortableContext, 
   horizontalListSortingStrategy 
 } from '@dnd-kit/sortable';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useWorkspaceStore, Task } from '@/store/useWorkspaceStore';
 import KanbanColumn from './KanbanColumn';
 import KanbanTask from './KanbanTask';
@@ -31,21 +31,42 @@ interface Props {
 }
 
 export default function KanbanBoard({ isViewer }: Props) {
+  const { board } = useWorkspaceStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  if (isViewer) {
+    return (
+      <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
+        {board.map((column) => (
+          <KanbanColumn key={column.id} column={column} isViewer={true} />
+        ))}
+      </div>
+    );
+  }
+
+  return <InteractiveBoard />;
+}
+
+function InteractiveBoard() {
   const { id: workspaceId } = useParams();
   const { board, setBoard } = useWorkspaceStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor)
-  );
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  });
+  const keyboardSensor = useSensor(KeyboardSensor);
+  const sensors = useSensors(pointerSensor, keyboardSensor);
 
   const handleDragStart = (event: DragStartEvent) => {
-    if (isViewer) return;
     const { active } = event;
     const task = board
       .flatMap((col) => col.tasks)
@@ -55,7 +76,6 @@ export default function KanbanBoard({ isViewer }: Props) {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    if (isViewer) return;
     const { active, over } = event;
     if (!over) return;
 
@@ -87,7 +107,6 @@ export default function KanbanBoard({ isViewer }: Props) {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    if (isViewer) return;
     const { active, over } = event;
     setActiveTask(null);
 
@@ -128,14 +147,14 @@ export default function KanbanBoard({ isViewer }: Props) {
         newPosition: newIndex >= 0 ? newIndex : 0,
       });
     } catch (error) {
-      // Revert state if needed (skipped for brevity but noted in production plans)
+      console.error('Failed to persist move');
     }
   };
 
   return (
     <div className="h-full">
       <DndContext
-        sensors={isViewer ? [] : sensors}
+        sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
@@ -144,7 +163,7 @@ export default function KanbanBoard({ isViewer }: Props) {
         <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
           <SortableContext items={board.map((col) => col.id)} strategy={horizontalListSortingStrategy}>
             {board.map((column) => (
-              <KanbanColumn key={column.id} column={column} isViewer={isViewer} />
+              <KanbanColumn key={column.id} column={column} isViewer={false} />
             ))}
           </SortableContext>
         </div>

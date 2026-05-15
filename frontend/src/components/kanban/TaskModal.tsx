@@ -173,7 +173,7 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
                   priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'
                 }`} />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-text-dim">
-                  Infrastructure Task • {task.id.slice(0, 8)}
+                  Technical Context • {task.id.slice(0, 8)}
                 </span>
               </div>
               <button onClick={onClose} className="text-text-dim hover:text-foreground transition-smooth">
