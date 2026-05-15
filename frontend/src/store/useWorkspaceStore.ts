@@ -30,6 +30,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   comment_count?: number;
+  unread_count?: number;
 }
 
 export interface Column {

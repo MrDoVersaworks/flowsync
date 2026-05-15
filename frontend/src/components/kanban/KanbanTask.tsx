@@ -53,12 +53,22 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         }}
         className={`
           relative p-5 glass-card group 
-          border-border-color hover:border-accent-blue/30 transition-smooth
+          transition-smooth
+          ${task.unread_count && task.unread_count > 0 ? 'border-accent-cyan/50 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-border-color hover:border-accent-blue/30'}
           ${isDragging ? 'opacity-30' : ''}
           ${isOverlay ? 'shadow-2xl shadow-accent-blue/20 ring-2 ring-accent-blue/50' : ''}
           ${isViewer ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
         `}
       >
+        {/* Intelligence Alert Lighting */}
+        {task.unread_count && task.unread_count > 0 && (
+          <div className="absolute -top-1 -right-1 flex items-center justify-center z-30">
+            <div className="w-4 h-4 bg-accent-cyan rounded-full animate-ping opacity-50 absolute" />
+            <div className="w-4 h-4 bg-accent-cyan rounded-full shadow-[0_0_15px_rgba(34,211,238,0.8)] relative flex items-center justify-center text-[8px] font-black text-black">
+              {task.unread_count}
+            </div>
+          </div>
+        )}
         {/* Absolute Purge Action */}
         {!isOverlay && !isViewer && (
           <button
@@ -116,13 +126,13 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
                 <Hash className="w-3 h-3" />
                 <span>STK-{task.id.substring(0, 4).toUpperCase()}</span>
               </div>
-              {((task as any).unread_count ?? 0) > 0 && (
-                <div className="flex items-center gap-1 text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded-md border border-accent-cyan/20 animate-pulse">
+              {task.unread_count && task.unread_count > 0 && (
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded-md border border-accent-cyan/20 animate-pulse">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan" />
-                  <span>{(task as any).unread_count} Unread</span>
+                  <span>Intelligence Alert</span>
                 </div>
               )}
-              {((task as any).unread_count ?? 0) === 0 && ((task as any).comment_count ?? 0) > 0 && (
+              {(!task.unread_count || task.unread_count === 0) && (task.comment_count ?? 0) > 0 && (
                 <div className="flex items-center gap-1 text-[10px] font-bold text-text-dim bg-bg-secondary px-2 py-0.5 rounded-md">
                   <MessageSquare className="w-3 h-3" />
                   <span>{(task as any).comment_count}</span>

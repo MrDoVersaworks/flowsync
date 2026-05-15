@@ -1,6 +1,6 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { taskComments, tasks, users, workspaceMembers, workspaces } from '../db/schema.js';
+import { taskComments, tasks, users, workspaceMembers, workspaces, taskReads } from '../db/schema.js';
 import { ErrorCode } from '../constants.js';
 
 export async function listTaskComments(userId: string, taskId: string) {
