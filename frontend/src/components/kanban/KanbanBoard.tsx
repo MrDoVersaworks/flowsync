@@ -18,13 +18,12 @@ import {
   SortableContext, 
   horizontalListSortingStrategy 
 } from '@dnd-kit/sortable';
-import { useState, useCallback, useEffect } from 'react';
-import { useWorkspaceStore, Task } from '@/store/useWorkspaceStore';
+import { useState, useEffect } from 'react';
+import { useWorkspaceStore, Task, Column } from '@/store/useWorkspaceStore';
 import KanbanColumn from './KanbanColumn';
 import KanbanTask from './KanbanTask';
 import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 
 interface Props {
   isViewer?: boolean;
@@ -33,12 +32,11 @@ interface Props {
 export default function KanbanBoard({ isViewer }: Props) {
   const { board } = useWorkspaceStore();
   const [mounted, setMounted] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
 
   if (!mounted) return null;
 
@@ -47,49 +45,51 @@ export default function KanbanBoard({ isViewer }: Props) {
     : board.map(col => ({
         ...col,
         tasks: col.tasks.filter(t => (Number(t.unread_count) || 0) > 0)
-      })).filter(col => col.tasks.length > 0 || activeFilter === 'all');
+      })).filter(col => col.tasks.length > 0);
 
-  if (isViewer) {
-    return (
-      <div className="h-full flex flex-col gap-6">
-        {/* Reconciliation Filter Bar */}
-        <div className="flex items-center gap-4 px-4 md:px-0">
-          <button 
-            onClick={() => setActiveFilter('all')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border ${
-              activeFilter === 'all' 
-                ? 'bg-accent-blue text-white border-accent-blue shadow-lg shadow-accent-blue/20' 
-                : 'bg-bg-secondary text-text-dim border-border-color hover:border-accent-blue/50'
-            }`}
-          >
-            All Technical Contexts
-          </button>
-          <button 
-            onClick={() => setActiveFilter('unread')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border flex items-center gap-2 ${
-              activeFilter === 'unread' 
-                ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20' 
-                : 'bg-bg-secondary text-text-dim border-border-color hover:border-red-500/50'
-            }`}
-          >
-            <div className={`w-1.5 h-1.5 rounded-full bg-red-500 ${activeFilter === 'unread' ? 'animate-ping' : ''}`} />
-            Unread Intelligence
-          </button>
-        </div>
-
-        <div className="flex-1 flex justify-start gap-6 md:gap-10 overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
-          {filteredBoard.map((column) => (
-            <KanbanColumn key={column.id} column={column} isViewer={true} />
-          ))}
-        </div>
+  return (
+    <div className="h-full flex flex-col gap-6">
+      {/* Reconciliation Filter Bar (Global for all roles) */}
+      <div className="flex items-center gap-4 px-4 md:px-0">
+        <button 
+          onClick={() => setActiveFilter('all')}
+          className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border ${
+            activeFilter === 'all' 
+              ? 'bg-accent-blue text-white border-accent-blue shadow-lg shadow-accent-blue/20' 
+              : 'bg-bg-secondary text-text-dim border-border-color hover:border-accent-blue/50'
+          }`}
+        >
+          All Technical Contexts
+        </button>
+        <button 
+          onClick={() => setActiveFilter('unread')}
+          className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border flex items-center gap-2 ${
+            activeFilter === 'unread' 
+              ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20' 
+              : 'bg-bg-secondary text-text-dim border-border-color hover:border-red-500/50'
+          }`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full bg-red-500 ${activeFilter === 'unread' ? 'animate-ping' : ''}`} />
+          Unread Intelligence
+        </button>
       </div>
-    );
-  }
 
-  return <InteractiveBoard />;
+      <div className="flex-1 overflow-hidden">
+        {isViewer ? (
+          <div className="flex justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
+            {filteredBoard.map((column) => (
+              <KanbanColumn key={column.id} column={column} isViewer={true} />
+            ))}
+          </div>
+        ) : (
+          <InteractiveBoard filteredBoard={filteredBoard} />
+        )}
+      </div>
+    </div>
+  );
 }
 
-function InteractiveBoard() {
+function InteractiveBoard({ filteredBoard }: { filteredBoard: Column[] }) {
   const { id: workspaceId } = useParams();
   const { board, setBoard } = useWorkspaceStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -188,38 +188,36 @@ function InteractiveBoard() {
   };
 
   return (
-    <div className="h-full">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
-          <SortableContext items={board.map((col) => col.id)} strategy={horizontalListSortingStrategy}>
-            {board.map((column) => (
-              <KanbanColumn key={column.id} column={column} isViewer={false} />
-            ))}
-          </SortableContext>
-        </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
+        <SortableContext items={filteredBoard.map((col) => col.id)} strategy={horizontalListSortingStrategy}>
+          {filteredBoard.map((column) => (
+            <KanbanColumn key={column.id} column={column} isViewer={false} />
+          ))}
+        </SortableContext>
+      </div>
 
-        <DragOverlay dropAnimation={{
-          sideEffects: defaultDropAnimationSideEffects({
-            styles: {
-              active: {
-                opacity: '0.5',
-              },
+      <DragOverlay dropAnimation={{
+        sideEffects: defaultDropAnimationSideEffects({
+          styles: {
+            active: {
+              opacity: '0.5',
             },
-          }),
-        }}>
-          {activeTask ? (
-            <div className="w-[85vw] sm:w-80 md:w-96 max-w-[380px] cursor-grabbing">
-              <KanbanTask task={activeTask} isOverlay />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
+          },
+        }),
+      }}>
+        {activeTask ? (
+          <div className="w-[85vw] sm:w-80 md:w-96 max-w-[380px] cursor-grabbing">
+            <KanbanTask task={activeTask} isOverlay />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

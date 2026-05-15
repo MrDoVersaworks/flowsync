@@ -298,13 +298,14 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
                   <input 
                     type="text"
                     value={newComment}
+                    disabled={isViewer}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a technical note..."
-                    className="w-full bg-bg-secondary border border-border-color rounded-xl pl-4 pr-12 py-3 text-sm text-foreground outline-none focus:border-accent-blue transition-smooth"
+                    placeholder={isViewer ? "Viewing Reconciliation Feed..." : "Add a technical note..."}
+                    className="w-full bg-bg-secondary border border-border-color rounded-xl pl-4 pr-12 py-3 text-sm text-foreground outline-none focus:border-accent-blue transition-smooth disabled:opacity-50"
                   />
                   <button 
                     type="submit"
-                    disabled={isCommenting || !newComment.trim()}
+                    disabled={isCommenting || !newComment.trim() || isViewer}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-accent-blue hover:text-accent-blue/80 transition-smooth disabled:opacity-30"
                   >
                     {isCommenting ? <span className="w-4 h-4 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin" /> : <Send className="w-4 h-4" />}

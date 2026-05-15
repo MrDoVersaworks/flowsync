@@ -28,6 +28,7 @@ export default function WorkspacePage() {
   const { user, isAuthenticated } = useAuthStore();
   const userRole = activeWorkspace?.members?.find(m => m.user_id === user?.id)?.role;
   const isViewer = userRole === 'viewer';
+  const isAdmin = userRole === 'admin' || activeWorkspace?.owner_id === user?.id;
 
   const fetchBoard = async () => {
     setLoading(true);
@@ -84,9 +85,13 @@ export default function WorkspacePage() {
       setActiveMinds(members);
     });
 
+    const handleFocus = () => fetchBoard();
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       socketService.off(SocketEvent.BOARD_UPDATED);
       socketService.off(SocketEvent.PRESENCE_UPDATED);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [id, workspaces, mounted, isAuthenticated]);
 
@@ -414,7 +419,7 @@ export default function WorkspacePage() {
                             </div>
 
                             <div className="flex items-center justify-end gap-3 ml-14 sm:ml-0">
-                              {activeWorkspace.owner_id === user?.id && member.user_id !== user?.id ? (
+                              {isAdmin && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
                                 <>
                                   <select 
                                     value={member.role}
@@ -433,7 +438,7 @@ export default function WorkspacePage() {
                                   >
                                     <option value="viewer">Viewer</option>
                                     <option value="member">Contributor</option>
-                                    <option value="admin">Contributor</option>
+                                    <option value="admin">Admin Contributor</option>
                                   </select>
                                   <button 
                                     onClick={async () => {
