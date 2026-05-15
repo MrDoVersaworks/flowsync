@@ -189,6 +189,28 @@ export default function Navbar() {
                 <span>Settings</span>
                 <Settings className="w-6 h-6 text-text-dim" />
               </Link>
+
+              <div className="space-y-4">
+                <p className="text-[10px] font-bold text-text-dim uppercase tracking-[0.3em] pl-1">Sovereign Guide</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'orchestrate', label: 'Orchestrate', icon: Sparkles, color: 'text-accent-blue' },
+                    { id: 'collaborate', label: 'Collaborate', icon: Users, color: 'text-accent-purple' },
+                    { id: 'synchronize', label: 'Synchronize', icon: Layout, color: 'text-accent-cyan' },
+                    { id: 'reconciliation', label: 'Reconciliation', icon: Zap, color: 'text-accent-cyan' },
+                    { id: 'sovereignty', label: 'Permissions', icon: ShieldCheck, color: 'text-accent-red' },
+                  ].map((item) => (
+                    <Link 
+                      key={item.id}
+                      href={`/guide/${item.id}`}
+                      className="flex items-center gap-3 p-4 rounded-2xl bg-bg-secondary border border-border-color"
+                    >
+                      <item.icon className={`w-4 h-4 ${item.color}`} />
+                      <span className="text-[10px] font-bold text-text-secondary">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
               <a 
                 href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support" 
                 className="text-2xl font-bold text-accent-blue font-display flex items-center justify-between group"
