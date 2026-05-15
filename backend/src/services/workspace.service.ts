@@ -2,7 +2,8 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/connection.js';
 import { workspaces, workspaceMembers, users, tasks, taskComments, taskReads } from '../db/schema.js';
-import { ErrorCode } from '../constants.js';
+import { ErrorCode, SocketEvent } from '../constants.js';
+import { io } from '../index.js';
 import { 
   WorkspaceResponse, 
   WorkspaceDetailResponse, 
@@ -245,6 +246,9 @@ export async function updateMemberRole(
     .set({ role })
     .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
     
+  // Real-Time Broadcast for role synchronization
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_UPDATED', workspaceId });
+
   logger.info('DATABASE', `Member ${memberId} role updated to ${role} in workspace ${workspaceId}`);
 }
 
@@ -264,6 +268,9 @@ export async function removeMember(userId: string, workspaceId: string, memberId
 
   await db.delete(workspaceMembers)
     .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
+
+  // Real-Time Broadcast
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_PURGED', workspaceId });
 
   logger.info('DATABASE', `Member ${memberId} purged from workspace ${workspaceId}`);
 }

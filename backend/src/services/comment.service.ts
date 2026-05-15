@@ -1,7 +1,8 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { taskComments, tasks, users, workspaceMembers, workspaces, taskReads } from '../db/schema.js';
-import { ErrorCode } from '../constants.js';
+import { ErrorCode, SocketEvent } from '../constants.js';
+import { io } from '../index.js';
 
 export async function listTaskComments(userId: string, taskId: string) {
   // Verify access via task's workspace
@@ -61,6 +62,13 @@ export async function createComment(userId: string, taskId: string, content: str
     content,
   }).returning();
 
+  // Real-Time Broadcast for unread counts
+  io.to(taskResult[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
+    type: 'COMMENT_ADDED', 
+    workspaceId: taskResult[0].workspace_id,
+    taskId 
+  });
+
   return inserted[0];
 }
 
@@ -79,6 +87,13 @@ export async function deleteComment(userId: string, commentId: string) {
   }
 
   await db.delete(taskComments).where(eq(taskComments.id, commentId));
+
+  // Real-Time Broadcast
+  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
+    type: 'COMMENT_DELETED', 
+    workspaceId: task[0].workspace_id,
+    taskId: task[0].id 
+  });
 }
 
 export async function purgeTaskComments(userId: string, taskId: string) {
@@ -95,6 +110,13 @@ export async function purgeTaskComments(userId: string, taskId: string) {
   }
 
   await db.delete(taskComments).where(eq(taskComments.task_id, taskId));
+
+  // Real-Time Broadcast
+  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
+    type: 'COMMENTS_PURGED', 
+    workspaceId: task[0].workspace_id,
+    taskId 
+  });
 }
 export async function markTaskAsRead(userId: string, taskId: string) {
   await db.insert(taskReads).values({

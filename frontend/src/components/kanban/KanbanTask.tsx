@@ -54,14 +54,14 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         className={`
           relative p-5 glass-card group 
           transition-smooth
-          ${task.unread_count && task.unread_count > 0 ? 'border-accent-cyan/50 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-border-color hover:border-accent-blue/30'}
+          ${(Number(task.unread_count) || 0) > 0 ? 'border-accent-cyan/50 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-border-color hover:border-accent-blue/30'}
           ${isDragging ? 'opacity-30' : ''}
           ${isOverlay ? 'shadow-2xl shadow-accent-blue/20 ring-2 ring-accent-blue/50' : ''}
           ${isViewer ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
         `}
       >
         {/* Intelligence Alert Lighting */}
-        {task.unread_count && task.unread_count > 0 && (
+        {(Number(task.unread_count) || 0) > 0 && (
           <div className="absolute -top-1 -right-1 flex items-center justify-center z-30">
             <div className="w-4 h-4 bg-accent-cyan rounded-full animate-ping opacity-50 absolute" />
             <div className="w-4 h-4 bg-accent-cyan rounded-full shadow-[0_0_15px_rgba(34,211,238,0.8)] relative flex items-center justify-center text-[8px] font-black text-black">
@@ -107,10 +107,19 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         )}
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="font-semibold text-foreground leading-tight group-hover:text-accent-blue transition-smooth">
-              {task.title}
-            </h4>
+          <div className="flex items-start justify-between gap-2 overflow-hidden">
+            <div className="flex-1 min-w-0 marquee-container">
+              <div className={`${task.title.length > 25 ? 'animate-marquee' : ''} pr-8`}>
+                <h4 className="font-semibold text-foreground leading-tight group-hover:text-accent-blue transition-smooth inline-block">
+                  {task.title}
+                </h4>
+                {task.title.length > 25 && (
+                  <h4 className="font-semibold text-foreground leading-tight group-hover:text-accent-blue transition-smooth inline-block ml-8">
+                    {task.title}
+                  </h4>
+                )}
+              </div>
+            </div>
             {isAIGenerated && <Sparkles className="w-4 h-4 text-accent-purple shrink-0" />}
           </div>
 
@@ -126,7 +135,7 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
                 <Hash className="w-3 h-3" />
                 <span>STK-{task.id.substring(0, 4).toUpperCase()}</span>
               </div>
-              {task.unread_count && task.unread_count > 0 && (
+              {(Number(task.unread_count) || 0) > 0 && (
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan bg-accent-cyan/10 px-2 py-0.5 rounded-md border border-accent-cyan/20 animate-pulse">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent-cyan" />
                   <span>Intelligence Alert</span>

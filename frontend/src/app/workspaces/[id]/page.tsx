@@ -71,6 +71,12 @@ export default function WorkspacePage() {
     socketService.on(SocketEvent.BOARD_UPDATED, (data: any) => {
       if (data?.workspaceId === id) {
         fetchBoard();
+        // If it's a member update, also refresh workspace detail for roles
+        if (data?.type === 'MEMBER_UPDATED' || data?.type === 'MEMBER_PURGED') {
+          api.get(`/workspaces/${id}`).then(({ data }) => {
+            setActiveWorkspace(data.data);
+          }).catch(() => {});
+        }
       }
     });
 

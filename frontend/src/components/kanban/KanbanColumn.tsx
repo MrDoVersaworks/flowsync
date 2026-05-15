@@ -51,9 +51,18 @@ export default function KanbanColumn({ column, isViewer }: Props) {
       >
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-accent-blue" />
-          <h3 className="font-bold text-foreground tracking-tight font-display">
-            {column.title}
-          </h3>
+          <div className="flex-1 min-w-0 marquee-container">
+            <div className={`${column.title.length > 20 ? 'animate-marquee' : ''} pr-4`}>
+              <h3 className="font-bold text-foreground tracking-tight font-display inline-block">
+                {column.title}
+              </h3>
+              {column.title.length > 20 && (
+                <h3 className="font-bold text-foreground tracking-tight font-display inline-block ml-4">
+                  {column.title}
+                </h3>
+              )}
+            </div>
+          </div>
           <span className="text-[10px] font-bold text-text-dim px-2 py-0.5 bg-bg-secondary rounded-full">
             {column.tasks.length}
           </span>

@@ -39,6 +39,21 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
     if (isOpen) {
       fetchComments();
       api.post(`/comments/read/${task.id}`).catch(() => {});
+      
+      // Real-time comment refresh
+      const handleBoardUpdate = (data: any) => {
+        if (data?.taskId === task.id && (data?.type === 'COMMENT_ADDED' || data?.type === 'COMMENT_DELETED' || data?.type === 'COMMENTS_PURGED')) {
+          fetchComments();
+        }
+      };
+
+      const { socketService } = require('@/lib/socket');
+      const { SocketEvent } = require('@/constants');
+      socketService.on(SocketEvent.BOARD_UPDATED, handleBoardUpdate);
+
+      return () => {
+        socketService.off(SocketEvent.BOARD_UPDATED, handleBoardUpdate);
+      };
     }
   }, [isOpen, task.id]);
 
@@ -229,9 +244,9 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
                   {isOwner && comments.length > 0 && (
                     <button 
                       onClick={handlePurgeFeed}
-                      className="text-[8px] font-bold text-red-500 hover:text-red-400 uppercase tracking-tighter flex items-center gap-1 transition-smooth"
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase tracking-widest rounded-lg border border-red-500/20 transition-smooth flex items-center gap-2"
                     >
-                      <Trash2 className="w-2.5 h-2.5" /> Purge Feed
+                      <Trash2 className="w-3 h-3" /> Purge Feed
                     </button>
                   )}
                 </div>
@@ -241,23 +256,28 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
                   {comments.map((comment) => (
                     <motion.div 
                       key={comment.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-bg-secondary/30 rounded-2xl p-4 border border-border-color/20 relative group/comment"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-bg-secondary/30 rounded-2xl p-4 border border-border-color/20 relative group/comment flex gap-4"
                     >
-                      {(comment.user.id === user?.id || isOwner) && (
-                        <button 
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="absolute top-4 right-4 p-1.5 text-text-dim hover:text-red-500 opacity-0 group-hover/comment:opacity-100 transition-smooth"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-accent-blue">{comment.user.name}</span>
-                        <span className="text-[10px] text-text-dim">{new Date(comment.created_at).toLocaleTimeString()}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-accent-blue tracking-tight uppercase">{comment.user.name}</span>
+                            <span className="text-[10px] text-text-dim font-medium">{new Date(comment.created_at).toLocaleTimeString()}</span>
+                          </div>
+                          {(comment.user.id === user?.id || isOwner) && (
+                            <button 
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="p-1.5 text-text-dim hover:text-red-500 transition-smooth opacity-0 group-hover/comment:opacity-100"
+                              title="Delete Note"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-text-secondary leading-relaxed break-words">{comment.content}</p>
                       </div>
-                      <p className="text-sm text-text-secondary leading-relaxed">{comment.content}</p>
                     </motion.div>
                   ))}
                   
