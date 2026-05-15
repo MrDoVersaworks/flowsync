@@ -54,7 +54,7 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         className={`
           relative p-5 glass-card group 
           transition-smooth
-          ${(Number(task.unread_count) || 0) > 0 ? 'border-accent-cyan/50 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'border-border-color hover:border-accent-blue/30'}
+          ${(Number(task.unread_count) || 0) > 0 ? 'border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] ring-2 ring-red-500/20' : 'border-border-color hover:border-accent-blue/30'}
           ${isDragging ? 'opacity-30' : ''}
           ${isOverlay ? 'shadow-2xl shadow-accent-blue/20 ring-2 ring-accent-blue/50' : ''}
           ${isViewer ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
@@ -66,8 +66,8 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
             className="absolute -top-1 -right-1 flex items-center justify-center z-30"
             title={`${task.unread_count} Unread Technical Notes`}
           >
-            <div className="w-4 h-4 bg-accent-cyan rounded-full animate-ping opacity-50 absolute" />
-            <div className="w-5 h-5 bg-accent-cyan rounded-full shadow-[0_0_15px_rgba(34,211,238,0.8)] relative flex items-center justify-center text-[9px] font-black text-black">
+            <div className="w-5 h-5 bg-red-500 rounded-full animate-ping opacity-75 absolute" />
+            <div className="w-6 h-6 bg-red-500 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.9)] relative flex items-center justify-center text-[10px] font-black text-white">
               {task.unread_count}
             </div>
           </div>

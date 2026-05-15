@@ -38,14 +38,50 @@ export default function KanbanBoard({ isViewer }: Props) {
     setMounted(true);
   }, []);
 
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
+
   if (!mounted) return null;
+
+  const filteredBoard = activeFilter === 'all' 
+    ? board 
+    : board.map(col => ({
+        ...col,
+        tasks: col.tasks.filter(t => (Number(t.unread_count) || 0) > 0)
+      })).filter(col => col.tasks.length > 0 || activeFilter === 'all');
 
   if (isViewer) {
     return (
-      <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
-        {board.map((column) => (
-          <KanbanColumn key={column.id} column={column} isViewer={true} />
-        ))}
+      <div className="h-full flex flex-col gap-6">
+        {/* Reconciliation Filter Bar */}
+        <div className="flex items-center gap-4 px-4 md:px-0">
+          <button 
+            onClick={() => setActiveFilter('all')}
+            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border ${
+              activeFilter === 'all' 
+                ? 'bg-accent-blue text-white border-accent-blue shadow-lg shadow-accent-blue/20' 
+                : 'bg-bg-secondary text-text-dim border-border-color hover:border-accent-blue/50'
+            }`}
+          >
+            All Technical Contexts
+          </button>
+          <button 
+            onClick={() => setActiveFilter('unread')}
+            className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-smooth border flex items-center gap-2 ${
+              activeFilter === 'unread' 
+                ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20' 
+                : 'bg-bg-secondary text-text-dim border-border-color hover:border-red-500/50'
+            }`}
+          >
+            <div className={`w-1.5 h-1.5 rounded-full bg-red-500 ${activeFilter === 'unread' ? 'animate-ping' : ''}`} />
+            Unread Intelligence
+          </button>
+        </div>
+
+        <div className="flex-1 flex justify-start gap-6 md:gap-10 overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
+          {filteredBoard.map((column) => (
+            <KanbanColumn key={column.id} column={column} isViewer={true} />
+          ))}
+        </div>
       </div>
     );
   }
