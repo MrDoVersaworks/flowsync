@@ -61,13 +61,14 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         `}
       >
         {/* Intelligence Alert Lighting */}
+        {/* RED PULSING INTELLIGENCE BEACON */}
         {(Number(task.unread_count) || 0) > 0 && (
           <div 
-            className="absolute -top-1 -right-1 flex items-center justify-center z-30"
+            className="absolute -top-2 -right-2 flex items-center justify-center z-[60]"
             title={`${task.unread_count} Unread Technical Notes`}
           >
-            <div className="w-5 h-5 bg-red-500 rounded-full animate-ping opacity-75 absolute" />
-            <div className="w-6 h-6 bg-red-500 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.9)] relative flex items-center justify-center text-[10px] font-black text-white">
+            <div className="w-6 h-6 bg-red-500 rounded-full animate-ping opacity-75 absolute" />
+            <div className="w-7 h-7 bg-red-500 rounded-full shadow-[0_0_25px_rgba(239,68,68,1)] relative flex items-center justify-center text-[11px] font-black text-white border-2 border-background">
               {task.unread_count}
             </div>
           </div>
@@ -110,27 +111,19 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         )}
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-2 overflow-hidden">
-            <div className="flex-1 min-w-0 marquee-container">
-              <div className={`${task.title.length > 25 ? 'animate-marquee' : ''} pr-8`}>
-                <h4 className="font-semibold text-foreground leading-tight group-hover:text-accent-blue transition-smooth inline-block">
-                  {task.title}
-                </h4>
-                {task.title.length > 25 && (
-                  <h4 className="font-semibold text-foreground leading-tight group-hover:text-accent-blue transition-smooth inline-block ml-8">
-                    {task.title}
-                  </h4>
-                )}
-              </div>
+          <div className="space-y-4 mb-6">
+            <div className="overflow-hidden">
+              <h3 className={`text-base font-bold text-foreground leading-tight tracking-tight group-hover:text-accent-blue transition-smooth ${task.title.length > 30 ? 'animate-marquee hover:pause' : ''}`}>
+                {task.title}
+              </h3>
             </div>
-            {isAIGenerated && <Sparkles className="w-4 h-4 text-accent-purple shrink-0" />}
+          
+            {task.description && (
+              <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed opacity-80">
+                {task.description.replace('[AI]', '').trim()}
+              </p>
+            )}
           </div>
-
-          {task.description && (
-            <p className="text-xs text-text-dim line-clamp-2 leading-relaxed">
-              {task.description.replace('[AI]', '').trim()}
-            </p>
-          )}
 
           <div className="flex items-center justify-between pt-4 border-t border-border-color">
             <div className="flex items-center gap-3">

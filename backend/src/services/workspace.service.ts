@@ -93,9 +93,11 @@ export async function listUserWorkspaces(
         INNER JOIN ${tasks} ON ${taskComments.task_id} = ${tasks.id}
         WHERE ${tasks.workspace_id} = ${workspaces.id}
         AND ${taskComments.user_id} != ${userId}
-        AND ${taskComments.created_at} > COALESCE(
-          (SELECT ${taskReads.last_read_at} FROM ${taskReads} WHERE ${taskReads.user_id} = ${userId} AND ${taskReads.task_id} = ${tasks.id}),
-          '1970-01-01'::timestamptz
+        AND NOT EXISTS (
+          SELECT 1 FROM ${taskReads} 
+          WHERE ${taskReads.task_id} = ${tasks.id} 
+          AND ${taskReads.user_id} = ${userId} 
+          AND ${taskReads.last_read_at} >= ${taskComments.created_at}
         )
       )`
     })

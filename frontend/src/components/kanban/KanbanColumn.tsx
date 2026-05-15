@@ -49,49 +49,46 @@ export default function KanbanColumn({ column, isViewer }: Props) {
         {...listeners}
         className={`flex items-center justify-between p-4 mb-4 glass rounded-2xl border-border-color group-hover:border-border-color transition-smooth ${isViewer ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-accent-blue" />
-          <div className="flex-1 min-w-0 marquee-container">
-            <div className={`${column.title.length > 20 ? 'animate-marquee' : ''} pr-4`}>
-              <h3 className="font-bold text-foreground tracking-tight font-display inline-block">
+        <div className="flex items-center justify-between w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-2 h-2 rounded-full bg-accent-blue shadow-[0_0_10px_rgba(59,130,246,0.5)] shrink-0" />
+            <div className="overflow-hidden">
+              <h3 className={`text-sm font-black text-foreground uppercase tracking-tight font-display ${column.title.length > 25 ? 'animate-marquee' : 'truncate'}`}>
                 {column.title}
               </h3>
-              {column.title.length > 20 && (
-                <h3 className="font-bold text-foreground tracking-tight font-display inline-block ml-4">
-                  {column.title}
-                </h3>
-              )}
             </div>
           </div>
-          <span className="text-[10px] font-bold text-text-dim px-2 py-0.5 bg-bg-secondary rounded-full">
-            {column.tasks.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {!isViewer && (
-            <button 
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (confirm(`Purge the "${column.title}" column and all its contents? This action is irreversible.`)) {
-                  try {
-                    await api.delete(`/kanban/${column.workspace_id}/columns/${column.id}`);
-                    const state = useWorkspaceStore.getState();
-                    state.setBoard(state.board.filter(col => col.id !== column.id));
-                    toast.success('Column Purged');
-                  } catch (error) {
-                    console.error(error);
-                  }
-                }
-              }}
-              className="text-text-dim hover:text-red-500 transition-smooth p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-              title="Purge Column"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-          <button className="text-text-dim hover:text-foreground transition-smooth p-1">
-            <MoreHorizontal className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0 ml-3">
+            <span className="text-[10px] font-black text-text-dim bg-bg-secondary px-2 py-0.5 rounded-md border border-border-color/50">
+              {column.tasks.length}
+            </span>
+            <div className="flex items-center gap-1">
+              {!isViewer && (
+                <button 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Purge the "${column.title}" column and all its contents? This action is irreversible.`)) {
+                      try {
+                        await api.delete(`/kanban/${column.workspace_id}/columns/${column.id}`);
+                        const state = useWorkspaceStore.getState();
+                        state.setBoard(state.board.filter(col => col.id !== column.id));
+                        toast.success('Column Purged');
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }
+                  }}
+                  className="text-text-dim hover:text-red-500 transition-smooth p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                  title="Purge Column"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              <button className="text-text-dim hover:text-foreground transition-smooth p-1">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
