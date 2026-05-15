@@ -22,27 +22,31 @@ FlowSync is engineered for specific high-performance cohorts who demand speed, t
 
 ## 🚀 Key Features
 
-- **Sovereign Goal Breakdown:** High-level goals are decomposed into actionable Kanban tasks using your private AI configuration.
-- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted in near-real-time to the entire team via Socket.io.
+- **Sovereign Goal Inception:** High-level goals are decomposed into actionable Kanban tasks using your private AI configuration.
+- **Collaborative Reconciliation:** Task-anchored chat feed for real-time technical discussion and decision persistence.
+- **Intelligent Notifications:** Personalized unread tracking engine with global dashboard alerts for collaborative throughput.
+- **Sovereign Guide System:** Modular, stage-based technical briefings (Orchestrate, Collaborate, Synchronize) for focused feature mastery.
+- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted in near-real-time via Socket.io.
+- **Atomic Permissions:** Granular Role-Based Access Control (RBAC) ensuring technical authority is strictly managed (Owner, Contributor, Viewer).
 - **AES-256 Secure Vault:** Your API keys are encrypted at rest and only decrypted in volatile memory during generation sessions.
 - **Adaptive Responsive Design:** A "True Responsive" UI that utilizes CSS scroll-snapping for a focused mobile Kanban experience.
-- **DevOps Hardened:** Automated CI/CD pipelines ensure that every push is type-safe and build-ready.
 
 ---
 
 ## 🛡️ Sovereign Security Map
 FlowSync implements a "Vault-First" security model to protect user data and AI credentials.
 - **Credential Masking**: AES-256-GCM encryption for all sensitive API keys.
-- **Decryption Isolation**: Keys are only decrypted in volatile RAM during AI generation.
-- **Identity Guard**: Dual-token JWT (Access + Refresh) with strict CSRF protection.
+- **Decryption Isolation**: Keys are only decrypted in-memory during generation sessions.
+- **Authority Guard**: Multi-tier RBAC hierarchy (Owner, Contributor, Viewer) enforced at the API layer.
 
 ## 🚀 Engineering Quality Matrix
 | Pillar | Status | Implementation |
 | :--- | :--- | :--- |
 | **Adaptive Design** | ✅ | Scroll-snapping & Fluid Column Reflow. |
-| **Continuous Integration** | ✅ | GitHub Actions Automated Quality Gates. |
+| **Collaborative Chat** | ✅ | Task-anchored technical reconciliation feed. |
+| **Atomic Permissions** | ✅ | Tiered RBAC authority (Owner/Contributor/Viewer). |
 | **Data Sovereignty** | ✅ | AES-256 Encrypted AI Credential Vaulting. |
-| **System Integrity** | ✅ | Single-Source-of-Truth Domain Registry. |
+| **System Integrity** | ✅ | 100% Type-Safe Architecture (noEmit Passing). |
 
 ---
 
@@ -50,8 +54,13 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 
 | **Intelligent Dashboard** | **Mobile Adaptiveness** |
 |:---:|:---:|
-| ![Landing Desktop](C:/Users/User/.gemini/antigravity/brain/c10ffd80-731f-4852-94f8-048ae68131c6/landing_desktop_png_1778607663020.png) | ![Landing Mobile](C:/Users/User/.gemini/antigravity/brain/c10ffd80-731f-4852-94f8-048ae68131c6/landing_mobile_png_1778607675657.png) |
+| ![Landing Hero](frontend/public/screenshots/landing_hero.png) | ![Mobile View](frontend/public/screenshots/mobile_view.png) |
 | *Premium Glassmorphism Interface* | *Scroll-Snap Focused View* |
+
+| **Board Sanctuary** | **Security & Sovereignty** |
+|:---:|:---:|
+| ![Board Sanctuary](frontend/public/screenshots/board_sanctuary.png) | ![Security Vault](frontend/public/screenshots/security_vault.png) |
+| *Real-Time Presence & State Management* | *AES-256-GCM Vault & Total Purge* |
 
 ---
 
@@ -146,10 +155,11 @@ FlowSync is architected for **Multi-Cloud Resilience**:
 
 ---
 
-## 👨‍💻 Developer & Contact
-FlowSync is part of the **Sovereign Portfolio Series**.
+## 👨‍💻 Sovereign Engineering & Support
 
-**Engineering by Oyewole Favour**  
+FlowSync is part of a high-innovation portfolio series.
+
+**Architected by Oyewole Favour**  
 📧 [mrdoofficial1@gmail.com](mailto:mrdoofficial1@gmail.com)  
 💼 [LinkedIn](https://www.linkedin.com/in/mrdoversaworks/)  
 🌐 [GitHub](https://github.com/MrDoVersaworks/)

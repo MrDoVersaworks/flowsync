@@ -1,6 +1,6 @@
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql, count } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { columns, tasks, workspaceMembers } from '../db/schema.js';
+import { columns, tasks, workspaceMembers, taskComments } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
@@ -28,8 +28,33 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
     .where(eq(columns.workspace_id, workspaceId))
     .orderBy(asc(columns.position));
 
+  // Fetch tasks with comment counts
   const tks = await db
-    .select()
+    .select({
+      id: tasks.id,
+      workspace_id: tasks.workspace_id,
+      column_id: tasks.column_id,
+      title: tasks.title,
+      description: tasks.description,
+      priority: tasks.priority,
+      position: tasks.position,
+      assigned_to: tasks.assigned_to,
+      due_date: tasks.due_date,
+      created_by: tasks.created_by,
+      created_at: tasks.created_at,
+      updated_at: tasks.updated_at,
+      comment_count: sql<number>`(SELECT count(*)::int FROM ${taskComments} WHERE ${taskComments.task_id} = ${tasks.id})`,
+      unread_count: sql<number>`(
+        SELECT count(*)::int 
+        FROM ${taskComments} 
+        WHERE ${taskComments.task_id} = ${tasks.id} 
+        AND ${taskComments.user_id} != ${userId}
+        AND ${taskComments.created_at} > COALESCE(
+          (SELECT ${taskReads.last_read_at} FROM ${taskReads} WHERE ${taskReads.user_id} = ${userId} AND ${taskReads.task_id} = ${tasks.id}),
+          '1970-01-01'::timestamp
+        )
+      )`
+    })
     .from(tasks)
     .where(eq(tasks.workspace_id, workspaceId))
     .orderBy(asc(tasks.position));
@@ -45,12 +70,14 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
           created_at: t.created_at.toISOString(),
           updated_at: t.updated_at.toISOString(),
           due_date: t.due_date ? t.due_date.toISOString() : null,
+          comment_count: t.comment_count
         })),
     })),
   };
 
   return board;
 }
+
 
 export async function createColumn(userId: string, workspaceId: string, title: string): Promise<ColumnResponse> {
   await verifyMembership(userId, workspaceId);

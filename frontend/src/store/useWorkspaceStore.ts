@@ -1,10 +1,19 @@
 import { create } from 'zustand';
 
+export interface WorkspaceMember {
+  user_id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member' | 'viewer';
+  joined_at: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;
   owner_id: string;
   invite_code: string;
+  members?: WorkspaceMember[];
 }
 
 export interface Task {
@@ -20,6 +29,7 @@ export interface Task {
   due_date: string | null;
   created_at: string;
   updated_at: string;
+  comment_count?: number;
 }
 
 export interface Column {

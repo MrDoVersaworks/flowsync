@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Layout, ArrowRight, Loader2, Sparkles, Trash2, Info, Users, Copy, Check, Compass, ChevronRight } from 'lucide-react';
+import { Plus, Layout, ArrowRight, Loader2, Sparkles, Trash2, Info, Users, Copy, Check, Compass, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
@@ -18,6 +18,8 @@ export default function WorkspacesPage() {
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string, name: string } | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
@@ -86,17 +88,26 @@ export default function WorkspacesPage() {
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (workspace: { id: string, name: string }, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setWorkspaceToDelete(workspace);
+    setDeletePassword('');
+  };
+
+  const confirmDelete = async () => {
+    if (!workspaceToDelete || !deletePassword) return;
     
-    setDeletingId(id);
+    setDeletingId(workspaceToDelete.id);
     try {
-      await api.delete(`/workspaces/${id}`);
-      setWorkspaces(workspaces.filter(ws => ws.id !== id));
+      await api.delete(`/workspaces/${workspaceToDelete.id}`, { 
+        data: { password: deletePassword } 
+      });
+      setWorkspaces(workspaces.filter(ws => ws.id !== workspaceToDelete.id));
       toast.success('Workspace purged.');
-    } catch (error) {
-      toast.error('Failed to purge workspace.');
+      setWorkspaceToDelete(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error?.message || 'Failed to purge workspace. Verify credentials.');
     } finally {
       setDeletingId(null);
     }
@@ -156,32 +167,6 @@ export default function WorkspacesPage() {
         </header>
 
         {/* Sovereign Guide: Instructions */}
-        <section className="mb-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/guide#orchestrate" className="glass-card p-6 border-accent-blue/20 bg-accent-blue/5 hover:bg-accent-blue/10 transition-smooth group">
-            <div className="flex items-center gap-3 mb-4 text-accent-blue">
-              <Sparkles className="w-5 h-5 group-hover:scale-110 transition-smooth" />
-              <h3 className="font-bold uppercase tracking-widest text-[10px]">Step 1</h3>
-            </div>
-            <h4 className="text-foreground font-bold mb-2">Orchestrate</h4>
-            <p className="text-text-dim text-sm leading-relaxed">Create a sanctuary for your project. This is your command center for AI-driven Kanban.</p>
-          </Link>
-          <Link href="/guide#collaborate" className="glass-card p-6 border-accent-purple/20 bg-accent-purple/5 hover:bg-accent-purple/10 transition-smooth group">
-            <div className="flex items-center gap-3 mb-4 text-accent-purple">
-              <Users className="w-5 h-5 group-hover:scale-110 transition-smooth" />
-              <h3 className="font-bold uppercase tracking-widest text-[10px]">Step 2</h3>
-            </div>
-            <h4 className="text-foreground font-bold mb-2">Collaborate</h4>
-            <p className="text-text-dim text-sm leading-relaxed">Enter a workspace and use the "Invite" code to synchronize with your team in real-time.</p>
-          </Link>
-          <Link href="/guide#synchronize" className="glass-card p-6 border-accent-cyan/20 bg-accent-cyan/5 hover:bg-accent-cyan/10 transition-smooth group">
-            <div className="flex items-center gap-3 mb-4 text-accent-cyan">
-              <Layout className="w-5 h-5 group-hover:scale-110 transition-smooth" />
-              <h3 className="font-bold uppercase tracking-widest text-[10px]">Step 3</h3>
-            </div>
-            <h4 className="text-foreground font-bold mb-2">Synchronize</h4>
-            <p className="text-text-dim text-sm leading-relaxed">Use AI Breakdown to transform high-level goals into executable Kanban task flows.</p>
-          </Link>
-        </section>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-32">
@@ -218,9 +203,18 @@ export default function WorkspacesPage() {
                   <div className="w-16 h-16 bg-accent-blue/10 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-smooth">
                     <Layout className="w-8 h-8 text-accent-blue" />
                   </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-accent-blue transition-smooth font-display tracking-tight">
+                  <h3 className="text-2xl font-bold text-foreground mb-2 group-hover:text-accent-blue transition-smooth font-display tracking-tight">
                     {workspace.name}
                   </h3>
+                  
+                  {((workspace as any).unread_count ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-2 h-2 rounded-full bg-accent-cyan animate-ping" />
+                      <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-widest">
+                        {(workspace as any).unread_count} Intelligence Alerts
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="mt-auto flex items-center justify-between pt-8 border-t border-border-color">
                     <div className="flex items-center gap-3">
@@ -235,9 +229,9 @@ export default function WorkspacesPage() {
 
                 {/* Absolute Purge Action */}
                 <button
-                  onClick={(e) => handleDelete(workspace.id, e)}
+                  onClick={(e) => handleDeleteClick({ id: workspace.id, name: workspace.name }, e)}
                   disabled={deletingId === workspace.id}
-                  className="absolute top-6 right-6 p-3 bg-red-500/10 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-smooth hover:bg-red-500 hover:text-foreground z-20"
+                  className="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-smooth hover:bg-red-500 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] z-20"
                   title="Purge Workspace"
                 >
                   {deletingId === workspace.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
@@ -247,6 +241,83 @@ export default function WorkspacesPage() {
           </div>
         )}
       </div>
+
+      {/* Security Vault: Purge Confirmation Modal */}
+      <AnimatePresence>
+        {workspaceToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setWorkspaceToDelete(null)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-lg glass-card p-10 relative z-10 border-red-500/20"
+            >
+              <button 
+                onClick={() => setWorkspaceToDelete(null)}
+                className="absolute top-6 right-6 text-text-dim hover:text-foreground"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <div className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center">
+                    <Trash2 className="w-7 h-7 text-red-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground font-display">Purge Sanctuary</h2>
+                    <p className="text-text-secondary text-sm">Destructive action detected for <span className="text-red-500 font-bold">{workspaceToDelete.name}</span>.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-4 text-center">
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      This will permanently delete all task data and columns. This action is irreversible.
+                    </p>
+                    
+                    <div className="space-y-2 text-left">
+                      <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest pl-1">Confirm with Password</label>
+                      <input 
+                        type="password"
+                        placeholder="••••••••"
+                        className="w-full bg-bg-secondary border border-border-color rounded-xl px-4 py-3 text-foreground focus:border-red-500/50 outline-none transition-smooth text-sm"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-2">
+                      <button 
+                        onClick={confirmDelete}
+                        disabled={deletingId === workspaceToDelete.id || !deletePassword}
+                        className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold rounded-xl transition-smooth flex items-center justify-center gap-2 disabled:opacity-30"
+                      >
+                        {deletingId === workspaceToDelete.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                        <span>Purge Sanctuary</span>
+                      </button>
+                      <button 
+                        onClick={() => setWorkspaceToDelete(null)}
+                        className="w-full py-2 text-text-dim hover:text-foreground text-xs font-bold transition-smooth"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

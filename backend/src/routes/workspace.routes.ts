@@ -4,7 +4,9 @@ import {
   listUserWorkspaces, 
   getWorkspaceDetail, 
   joinWorkspaceByCode,
-  deleteWorkspace
+  deleteWorkspace,
+  updateMemberRole,
+  removeMember
 } from '../services/workspace.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
@@ -36,6 +38,25 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const workspaceId = req.params.id as string;
   const detail = await getWorkspaceDetail(userId, workspaceId);
   res.status(200).json({ success: true, data: detail });
+}));
+
+// Update member role
+router.patch('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.id as string;
+  const memberId = req.params.memberId as string;
+  const { role } = req.body;
+  await updateMemberRole(userId, workspaceId, memberId, role);
+  res.status(200).json({ success: true, message: 'Role synchronized' });
+}));
+
+// Remove member
+router.delete('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const workspaceId = req.params.id as string;
+  const memberId = req.params.memberId as string;
+  await removeMember(userId, workspaceId, memberId);
+  res.status(200).json({ success: true, message: 'Member purged' });
 }));
 
 // Join workspace by invite code

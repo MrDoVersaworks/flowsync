@@ -1,26 +1,97 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Flag, AlignLeft, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Calendar, Flag, AlignLeft, Trash2, Clock, CheckCircle2, MessageSquare, Send } from 'lucide-react';
 import { Task, useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user: {
+    id: string;
+    name: string;
+  };
+}
 
 interface Props {
   task: Task;
   isOpen: boolean;
   onClose: () => void;
+  isViewer?: boolean;
 }
 
-export default function TaskModal({ task, isOpen, onClose }: Props) {
+export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [priority, setPriority] = useState(task.priority);
   const [isSaving, setIsSaving] = useState(false);
-  const { board, setBoard } = useWorkspaceStore();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isCommenting, setIsCommenting] = useState(false);
+  const { user } = useAuthStore();
+  const { board, setBoard, activeWorkspace } = useWorkspaceStore();
+  const isOwner = activeWorkspace?.owner_id === user?.id;
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchComments();
+      api.post(`/comments/read/${task.id}`).catch(() => {});
+    }
+  }, [isOpen, task.id]);
+
+  const fetchComments = async () => {
+    try {
+      const { data } = await api.get(`/comments/${task.id}`);
+      setComments(data.data);
+    } catch (error) {
+      console.error('Failed to fetch comments');
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    setIsCommenting(true);
+    try {
+      await api.post(`/comments/${task.id}`, { content: newComment });
+      setNewComment('');
+      fetchComments();
+      toast.success('Comment Synchronized');
+    } catch (error) {
+      toast.error('Failed to post comment');
+    } finally {
+      setIsCommenting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await api.delete(`/comments/${commentId}`);
+      toast.success('Note Purged');
+      fetchComments();
+    } catch (error) {
+      toast.error('Purge failed');
+    }
+  };
+
+  const handlePurgeFeed = async () => {
+    if (confirm('Wipe the entire technical reconciliation feed? This action is irreversible.')) {
+      try {
+        await api.delete(`/comments/task/${task.id}`);
+        toast.success('Feed Wiped');
+        fetchComments();
+      } catch (error) {
+        toast.error('Wipe failed');
+      }
+    }
+  };
 
   const handleUpdate = async () => {
+    if (isViewer) return;
     setIsSaving(true);
     try {
       const { data } = await api.patch(`/kanban/${task.workspace_id}/tasks/${task.id}`, {
@@ -44,6 +115,7 @@ export default function TaskModal({ task, isOpen, onClose }: Props) {
   };
 
   const handleDelete = async () => {
+    if (isViewer) return;
     if (confirm('Purge this task from the board?')) {
       try {
         await api.delete(`/kanban/${task.workspace_id}/tasks/${task.id}`);
@@ -100,8 +172,9 @@ export default function TaskModal({ task, isOpen, onClose }: Props) {
                 <input 
                   type="text"
                   value={title}
+                  disabled={isViewer}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-transparent text-2xl md:text-3xl font-bold text-foreground outline-none focus:text-accent-blue transition-smooth font-display tracking-tight"
+                  className="w-full bg-transparent text-2xl md:text-3xl font-bold text-foreground outline-none focus:text-accent-blue transition-smooth font-display tracking-tight disabled:opacity-80"
                   placeholder="Task Title"
                 />
               </div>
@@ -113,8 +186,9 @@ export default function TaskModal({ task, isOpen, onClose }: Props) {
                   </label>
                   <select 
                     value={priority}
+                    disabled={isViewer}
                     onChange={(e: any) => setPriority(e.target.value)}
-                    className="w-full bg-bg-secondary border border-border-color rounded-xl px-4 py-2 text-sm text-foreground outline-none focus:border-accent-blue transition-smooth appearance-none"
+                    className="w-full bg-bg-secondary border border-border-color rounded-xl px-4 py-2 text-sm text-foreground outline-none focus:border-accent-blue transition-smooth appearance-none disabled:opacity-50"
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
@@ -139,37 +213,107 @@ export default function TaskModal({ task, isOpen, onClose }: Props) {
                 </label>
                 <textarea 
                   value={description}
+                  disabled={isViewer}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-bg-secondary border border-border-color rounded-2xl p-6 text-sm text-text-secondary leading-relaxed outline-none focus:border-accent-blue transition-smooth min-h-[200px] resize-none"
+                  className="w-full bg-bg-secondary border border-border-color rounded-2xl p-6 text-sm text-text-secondary leading-relaxed outline-none focus:border-accent-blue transition-smooth min-h-[150px] resize-none disabled:opacity-80"
                   placeholder="Describe the technical requirements for this task..."
                 />
+              </div>
+
+              {/* Collaborative Comments Section */}
+              <div className="space-y-6 pt-6 border-t border-border-color/30">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-text-dim uppercase tracking-widest">
+                    <MessageSquare className="w-3 h-3" /> Collaborative Reconciliation
+                  </label>
+                  {isOwner && comments.length > 0 && (
+                    <button 
+                      onClick={handlePurgeFeed}
+                      className="text-[8px] font-bold text-red-500 hover:text-red-400 uppercase tracking-tighter flex items-center gap-1 transition-smooth"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" /> Purge Feed
+                    </button>
+                  )}
+                </div>
+                
+                {/* Comment Feed */}
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <motion.div 
+                      key={comment.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-bg-secondary/30 rounded-2xl p-4 border border-border-color/20 relative group/comment"
+                    >
+                      {(comment.user.id === user?.id || isOwner) && (
+                        <button 
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="absolute top-4 right-4 p-1.5 text-text-dim hover:text-red-500 opacity-0 group-hover/comment:opacity-100 transition-smooth"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-accent-blue">{comment.user.name}</span>
+                        <span className="text-[10px] text-text-dim">{new Date(comment.created_at).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="text-sm text-text-secondary leading-relaxed">{comment.content}</p>
+                    </motion.div>
+                  ))}
+                  
+                  {comments.length === 0 && (
+                    <p className="text-xs text-text-dim italic py-4 text-center">No technical reconciliation recorded yet.</p>
+                  )}
+                </div>
+
+                {/* Comment Input */}
+                <form onSubmit={handleAddComment} className="relative">
+                  <input 
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a technical note..."
+                    className="w-full bg-bg-secondary border border-border-color rounded-xl pl-4 pr-12 py-3 text-sm text-foreground outline-none focus:border-accent-blue transition-smooth"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={isCommenting || !newComment.trim()}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-accent-blue hover:text-accent-blue/80 transition-smooth disabled:opacity-30"
+                  >
+                    {isCommenting ? <span className="w-4 h-4 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </form>
               </div>
             </div>
 
             {/* Footer */}
             <div className="p-6 md:p-8 border-t border-border-color bg-bg-secondary/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <button 
-                onClick={handleDelete}
-                className="flex items-center gap-2 text-text-dim hover:text-red-500 transition-smooth text-xs font-bold uppercase tracking-widest"
-              >
-                <Trash2 className="w-4 h-4" /> Purge Task
-              </button>
+              {!isViewer && (
+                <button 
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 text-text-dim hover:text-red-500 transition-smooth text-xs font-bold uppercase tracking-widest"
+                >
+                  <Trash2 className="w-4 h-4" /> Purge Task
+                </button>
+              )}
               
-              <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="flex items-center gap-4 w-full sm:w-auto ml-auto">
                 <button 
                   onClick={onClose}
                   className="flex-1 sm:flex-none px-6 py-3 text-text-dim hover:text-foreground font-bold text-xs uppercase tracking-widest transition-smooth"
                 >
-                  Cancel
+                  {isViewer ? 'Close' : 'Cancel'}
                 </button>
-                <button 
-                  onClick={handleUpdate}
-                  disabled={isSaving}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-accent-blue text-white font-bold rounded-xl shadow-lg shadow-accent-blue/20 hover:bg-accent-blue/90 transition-smooth disabled:opacity-50 text-xs uppercase tracking-widest"
-                >
-                  {isSaving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  Save Changes
-                </button>
+                {!isViewer && (
+                  <button 
+                    onClick={handleUpdate}
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-accent-blue text-white font-bold rounded-xl shadow-lg shadow-accent-blue/20 hover:bg-accent-blue/90 transition-smooth disabled:opacity-50 text-xs uppercase tracking-widest"
+                  >
+                    {isSaving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Save Changes
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>

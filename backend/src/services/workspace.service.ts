@@ -1,7 +1,7 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/connection.js';
-import { workspaces, workspaceMembers, users } from '../db/schema.js';
+import { workspaces, workspaceMembers, users, tasks, taskComments, taskReads } from '../db/schema.js';
 import { ErrorCode } from '../constants.js';
 import { 
   WorkspaceResponse, 
@@ -86,6 +86,17 @@ export async function listUserWorkspaces(
       owner_id: workspaces.owner_id,
       invite_code: workspaces.invite_code,
       created_at: workspaces.created_at,
+      unread_count: sql<number>`(
+        SELECT count(*)::int 
+        FROM ${taskComments} 
+        INNER JOIN ${tasks} ON ${taskComments.task_id} = ${tasks.id}
+        WHERE ${tasks.workspace_id} = ${workspaces.id}
+        AND ${taskComments.user_id} != ${userId}
+        AND ${taskComments.created_at} > COALESCE(
+          (SELECT ${taskReads.last_read_at} FROM ${taskReads} WHERE ${taskReads.user_id} = ${userId} AND ${taskReads.task_id} = ${tasks.id}),
+          '1970-01-01'::timestamp
+        )
+      )`
     })
     .from(workspaces)
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
@@ -95,7 +106,7 @@ export async function listUserWorkspaces(
     .orderBy(desc(workspaces.created_at));
 
   return {
-    data: result.map((ws): WorkspaceResponse => ({
+    data: result.map((ws): any => ({
       ...ws,
       created_at: ws.created_at.toISOString(),
     })),
@@ -210,3 +221,50 @@ export async function deleteWorkspace(userId: string, workspaceId: string, passw
   await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
   logger.info('DATABASE', `Workspace deleted: ${workspaceId} by owner: ${userId}`);
 }
+
+export async function updateMemberRole(
+  userId: string, 
+  workspaceId: string, 
+  memberId: string, 
+  role: 'admin' | 'member'
+): Promise<void> {
+  const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+  if (wsResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
+  }
+
+  if (wsResult[0].owner_id !== userId) {
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can reconfigure infrastructure roles.' };
+  }
+
+  if (memberId === userId) {
+    throw { status: 400, code: ErrorCode.VALIDATION_ERROR, message: 'Owners cannot downgrade their own sovereignty.' };
+  }
+
+  await db.update(workspaceMembers)
+    .set({ role })
+    .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
+    
+  logger.info('DATABASE', `Member ${memberId} role updated to ${role} in workspace ${workspaceId}`);
+}
+
+export async function removeMember(userId: string, workspaceId: string, memberId: string): Promise<void> {
+  const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+  if (wsResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
+  }
+
+  if (wsResult[0].owner_id !== userId) {
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can purge members from the sanctuary.' };
+  }
+
+  if (memberId === userId) {
+    throw { status: 400, code: ErrorCode.VALIDATION_ERROR, message: 'Owners cannot purge themselves. Use Workspace Purge instead.' };
+  }
+
+  await db.delete(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
+
+  logger.info('DATABASE', `Member ${memberId} purged from workspace ${workspaceId}`);
+}
+

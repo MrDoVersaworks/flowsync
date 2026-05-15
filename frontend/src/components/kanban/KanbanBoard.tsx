@@ -26,7 +26,11 @@ import { api } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 
-export default function KanbanBoard() {
+interface Props {
+  isViewer?: boolean;
+}
+
+export default function KanbanBoard({ isViewer }: Props) {
   const { id: workspaceId } = useParams();
   const { board, setBoard } = useWorkspaceStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -41,6 +45,7 @@ export default function KanbanBoard() {
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (isViewer) return;
     const { active } = event;
     const task = board
       .flatMap((col) => col.tasks)
@@ -50,6 +55,7 @@ export default function KanbanBoard() {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
+    if (isViewer) return;
     const { active, over } = event;
     if (!over) return;
 
@@ -81,6 +87,7 @@ export default function KanbanBoard() {
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (isViewer) return;
     const { active, over } = event;
     setActiveTask(null);
 
@@ -128,7 +135,7 @@ export default function KanbanBoard() {
   return (
     <div className="h-full">
       <DndContext
-        sensors={sensors}
+        sensors={isViewer ? [] : sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
@@ -137,7 +144,7 @@ export default function KanbanBoard() {
         <div className="flex justify-start md:justify-center lg:justify-start gap-6 md:gap-10 h-full overflow-x-auto pb-10 px-4 md:px-0 custom-scrollbar">
           <SortableContext items={board.map((col) => col.id)} strategy={horizontalListSortingStrategy}>
             {board.map((column) => (
-              <KanbanColumn key={column.id} column={column} />
+              <KanbanColumn key={column.id} column={column} isViewer={isViewer} />
             ))}
           </SortableContext>
         </div>

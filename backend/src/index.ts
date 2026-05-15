@@ -38,6 +38,7 @@ import workspaceRoutes from './routes/workspace.routes.js';
 import kanbanRoutes from './routes/kanban.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import commentRoutes from './routes/comment.routes.js';
 
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
@@ -82,6 +83,7 @@ app.use('/api/settings', timeout('15s'), haltOnTimeout, generalRateLimiter, auth
 
 // AI routes require more time for generative inception
 app.use('/api/ai', timeout('60s'), haltOnTimeout, generalRateLimiter, aiRateLimiter, authMiddleware, aiRoutes);
+app.use('/api/comments', timeout('15s'), haltOnTimeout, generalRateLimiter, authMiddleware, commentRoutes);
 
 // ============================================================
 // 404 HANDLER

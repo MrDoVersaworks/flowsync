@@ -47,10 +47,11 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
+            <label htmlFor="full-name" className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
               Full Name
             </label>
             <input
+              id="full-name"
               type="text"
               className="auth-input"
               placeholder="John Doe"
@@ -61,10 +62,11 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
+            <label htmlFor="email-address" className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
               Email Address
             </label>
             <input
+              id="email-address"
               type="email"
               className="auth-input"
               placeholder="you@example.com"
@@ -75,10 +77,11 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
+            <label htmlFor="password" className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
               Password
             </label>
             <input
+              id="password"
               type="password"
               className="auth-input"
               placeholder="••••••••"
