@@ -1,4 +1,4 @@
-import { eq, and, asc, sql, count } from 'drizzle-orm';
+import { eq, and, asc, sql, count, lt, or, isNull, ne, max } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { columns, tasks, workspaceMembers, taskComments, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
@@ -6,7 +6,6 @@ import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from
 import { logger } from '../utils/logger.js';
 import { io } from '../index.js';
 
-// Helper to verify workspace membership
 async function verifyMembership(userId: string, workspaceId: string) {
   const membership = await db
     .select()
@@ -28,7 +27,38 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
     .where(eq(columns.workspace_id, workspaceId))
     .orderBy(asc(columns.position));
 
-  // Fetch tasks with comment counts
+  // 1. Create a Type-Safe Subquery for Unread Counts (Using DSL only)
+  const unreadCountsSubquery = db
+    .select({
+      taskId: taskComments.task_id,
+      unread_count: count(taskComments.id).as('unread_count'),
+    })
+    .from(taskComments)
+    .leftJoin(taskReads, and(
+      eq(taskReads.task_id, taskComments.task_id),
+      eq(taskReads.user_id, userId)
+    ))
+    .where(and(
+      ne(taskComments.user_id, userId),
+      or(
+        isNull(taskReads.last_read_at),
+        lt(taskReads.last_read_at, taskComments.created_at)
+      )
+    ))
+    .groupBy(taskComments.task_id)
+    .as('unread_counts_sq');
+
+  // 2. Create a Subquery for total comment counts
+  const totalCommentsSubquery = db
+    .select({
+      taskId: taskComments.task_id,
+      total_count: count(taskComments.id).as('total_count'),
+    })
+    .from(taskComments)
+    .groupBy(taskComments.task_id)
+    .as('total_comments_sq');
+
+  // 3. Main Query using Left Joins to the subqueries
   const tks = await db
     .select({
       id: tasks.id,
@@ -43,21 +73,12 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
       created_by: tasks.created_by,
       created_at: tasks.created_at,
       updated_at: tasks.updated_at,
-      comment_count: sql<number>`(SELECT count(*)::int FROM ${taskComments} WHERE ${taskComments.task_id} = ${tasks.id})`,
-      unread_count: sql<number>`(
-        SELECT count(*)::int 
-        FROM ${taskComments} 
-        WHERE ${taskComments.task_id} = ${tasks.id} 
-        AND ${taskComments.user_id} != ${userId}
-        AND NOT EXISTS (
-          SELECT 1 FROM ${taskReads} 
-          WHERE ${taskReads.task_id} = ${tasks.id} 
-          AND ${taskReads.user_id} = ${userId} 
-          AND ${taskReads.last_read_at} >= ${taskComments.created_at}
-        )
-      )`
+      unread_count: unreadCountsSubquery.unread_count,
+      comment_count: totalCommentsSubquery.total_count,
     })
     .from(tasks)
+    .leftJoin(unreadCountsSubquery, eq(tasks.id, unreadCountsSubquery.taskId))
+    .leftJoin(totalCommentsSubquery, eq(tasks.id, totalCommentsSubquery.taskId))
     .where(eq(tasks.workspace_id, workspaceId))
     .orderBy(asc(tasks.position));
 
@@ -72,30 +93,30 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
           created_at: t.created_at.toISOString(),
           updated_at: t.updated_at.toISOString(),
           due_date: t.due_date ? t.due_date.toISOString() : null,
-          comment_count: t.comment_count,
-          unread_count: t.unread_count
+          comment_count: Number(t.comment_count) || 0,
+          unread_count: Number(t.unread_count) || 0
         })),
     })),
   };
 
+  // DETAILED COLLABORATIVE AUDIT LOG
+  const totalUnread = tks.reduce((acc, t) => acc + (Number(t.unread_count) || 0), 0);
+  const tasksWithUnread = tks.filter(t => (Number(t.unread_count) || 0) > 0).map(t => `[${t.id.slice(0, 4)}: ${t.unread_count}]`).join(', ');
+  
+  logger.info('COLLABORATION', `Workspace ${workspaceId}: Board synchronized for user ${userId}. Total Unread Detected: ${totalUnread}. Alerts found in: ${tasksWithUnread || 'None'}`);
+
   return board;
 }
-
 
 export async function createColumn(userId: string, workspaceId: string, title: string): Promise<ColumnResponse> {
   await verifyMembership(userId, workspaceId);
 
-  // Get max position
   const maxPosResult = await db
-    .select({ max: sql<number>`max(${columns.position})::int` })
+    .select({ maxPos: max(columns.position) })
     .from(columns)
     .where(eq(columns.workspace_id, workspaceId));
   
-  let nextPos = 0;
-  const maxPos = maxPosResult[0]?.max;
-  if (maxPos !== null && maxPos !== undefined) {
-    nextPos = maxPos + 1;
-  }
+  const nextPos = (maxPosResult[0]?.maxPos ?? -1) + 1;
 
   const inserted = await db.insert(columns).values({
     workspace_id: workspaceId,
@@ -105,27 +126,19 @@ export async function createColumn(userId: string, workspaceId: string, title: s
 
   const col = inserted[0];
   const response = { ...col, created_at: col.created_at.toISOString() };
-  
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_CREATED', workspaceId });
-  
   return response;
 }
 
 export async function createTask(userId: string, workspaceId: string, columnId: string, title: string): Promise<TaskResponse> {
   await verifyMembership(userId, workspaceId);
 
-  // Get max position in column
   const maxPosResult = await db
-    .select({ max: sql<number>`max(${tasks.position})::int` })
+    .select({ maxPos: max(tasks.position) })
     .from(tasks)
     .where(eq(tasks.column_id, columnId));
   
-  let nextPos = 0;
-  const maxPos = maxPosResult[0]?.max;
-  if (maxPos !== null && maxPos !== undefined) {
-    nextPos = maxPos + 1;
-  }
+  const nextPos = (maxPosResult[0]?.maxPos ?? -1) + 1;
 
   const inserted = await db.insert(tasks).values({
     workspace_id: workspaceId,
@@ -143,9 +156,7 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
     due_date: task.due_date ? task.due_date.toISOString() : null,
   };
 
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_CREATED', workspaceId });
-
   return response;
 }
 
@@ -172,9 +183,7 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
     due_date: task.due_date ? task.due_date.toISOString() : null,
   };
 
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_UPDATED', workspaceId });
-
   return response;
 }
 
@@ -182,20 +191,13 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
   await verifyMembership(userId, workspaceId);
   const { taskId, fromColumnId, toColumnId, newPosition } = input;
 
-  // We use a transaction-like manual reordering logic
-  // 1. If moving within same column, shift others
-  // 2. If moving between columns, shift both
-  
   if (fromColumnId === toColumnId) {
-    // Same column reorder
     await db.transaction(async (tx) => {
-      // Logic for same column shift (simplified for prototype, will be hardened in Phase 2)
       await tx.update(tasks)
         .set({ position: newPosition })
         .where(eq(tasks.id, taskId));
     });
   } else {
-    // Cross column move
     await db.transaction(async (tx) => {
       await tx.update(tasks)
         .set({ column_id: toColumnId, position: newPosition })
@@ -203,10 +205,7 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
     });
   }
 
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_MOVED', workspaceId });
-
-  logger.info('DATABASE', `Task ${taskId} moved to column ${toColumnId} at pos ${newPosition}`);
 }
 
 export async function deleteTask(userId: string, workspaceId: string, taskId: string): Promise<void> {
@@ -220,29 +219,16 @@ export async function deleteTask(userId: string, workspaceId: string, taskId: st
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_DELETED', workspaceId });
 }
 
 export async function deleteColumn(userId: string, workspaceId: string, columnId: string): Promise<void> {
   await verifyMembership(userId, workspaceId);
 
-  // Cascading Delete: Tasks in the column are purged automatically by the DB if FK is set,
-  // but we'll do it explicitly here for absolute certainty in this architecture.
   await db.transaction(async (tx) => {
     await tx.delete(tasks).where(and(eq(tasks.column_id, columnId), eq(tasks.workspace_id, workspaceId)));
-    
-    const deleted = await tx.delete(columns)
-      .where(and(eq(columns.id, columnId), eq(columns.workspace_id, workspaceId)))
-      .returning();
-
-    if (deleted.length === 0) {
-      throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Column not found' };
-    }
+    await tx.delete(columns).where(and(eq(columns.id, columnId), eq(columns.workspace_id, workspaceId)));
   });
 
-  // Real-Time Broadcast
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_DELETED', workspaceId });
-  
-  logger.info('DATABASE', `Column ${columnId} purged from workspace ${workspaceId}`);
 }

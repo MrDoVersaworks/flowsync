@@ -113,6 +113,8 @@ export default function WorkspacesPage() {
     }
   };
 
+  if (!mounted) return null;
+
   return (
     <div className="min-h-screen pt-20 md:pt-24 pb-20 px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
@@ -166,8 +168,6 @@ export default function WorkspacesPage() {
           </div>
         </header>
 
-        {/* Sovereign Guide: Instructions */}
-
         {isLoading ? (
           <div className="flex items-center justify-center py-32">
             <Loader2 className="w-12 h-12 text-accent-blue animate-spin" />
@@ -209,8 +209,8 @@ export default function WorkspacesPage() {
                   
                   {((workspace as any).unread_count ?? 0) > 0 && (
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 rounded-full bg-accent-cyan animate-ping" />
-                      <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-widest">
+                      <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+                      <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
                         {(workspace as any).unread_count} Intelligence Alerts
                       </span>
                     </div>
@@ -227,7 +227,6 @@ export default function WorkspacesPage() {
                   </div>
                 </Link>
 
-                {/* Absolute Purge Action */}
                 <button
                   onClick={(e) => handleDeleteClick({ id: workspace.id, name: workspace.name }, e)}
                   disabled={deletingId === workspace.id}
@@ -242,7 +241,6 @@ export default function WorkspacesPage() {
         )}
       </div>
 
-      {/* Security Vault: Purge Confirmation Modal */}
       <AnimatePresence>
         {workspaceToDelete && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">

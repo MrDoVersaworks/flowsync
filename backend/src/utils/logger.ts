@@ -1,4 +1,4 @@
-type LogCategory = 'AUTH' | 'DATABASE' | 'SERVER' | 'SOCKET' | 'AI' | 'ERROR';
+type LogCategory = 'AUTH' | 'DATABASE' | 'SERVER' | 'SOCKET' | 'AI' | 'ERROR' | 'COLLABORATION';
 
 const colors = {
   reset: '\x1b[0m',

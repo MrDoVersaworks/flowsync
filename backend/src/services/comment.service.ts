@@ -62,6 +62,9 @@ export async function createComment(userId: string, taskId: string, content: str
     content,
   }).returning();
 
+  // RULE ALIGNMENT: Mark task as read for the sender immediately
+  await markTaskAsRead(userId, taskId);
+
   // Real-Time Broadcast for unread counts
   io.to(taskResult[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
     type: 'COMMENT_ADDED', 
@@ -118,13 +121,15 @@ export async function purgeTaskComments(userId: string, taskId: string) {
     taskId 
   });
 }
+
 export async function markTaskAsRead(userId: string, taskId: string) {
+  const now = new Date();
   await db.insert(taskReads).values({
     user_id: userId,
     task_id: taskId,
-    last_read_at: new Date(),
+    last_read_at: now,
   }).onConflictDoUpdate({
     target: [taskReads.user_id, taskReads.task_id],
-    set: { last_read_at: new Date() }
+    set: { last_read_at: now }
   });
 }

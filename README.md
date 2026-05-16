@@ -46,6 +46,7 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 | **Collaborative Chat** | ✅ | Task-anchored technical reconciliation feed. |
 | **Atomic Permissions** | ✅ | Tiered RBAC authority (Owner/Contributor/Viewer). |
 | **Data Sovereignty** | ✅ | AES-256 Encrypted AI Credential Vaulting. |
+| **Intelligence Recon**| ✅ | Reactive unread signaling & beacons. |
 | **System Integrity** | ✅ | 100% Type-Safe Architecture (noEmit Passing). |
 
 ---
@@ -77,6 +78,10 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 ### 3. Adaptive Model Injection
 **Challenge:** Users want to switch between Gemini models (Pro, Flash, Ultra) without backend reconfiguration.
 **Solution:** Developed a **Dynamic AI Context Injector**. The system retrieves the user's encrypted model preference and injects it into the generative session at runtime, ensuring the platform is future-proof against new model releases.
+
+### 4. The Intelligence Recon Loop
+**Challenge:** In high-concurrency environments, unread alerts often "phantom" or persist even after being read due to micro-temporal drift between the app and database.
+**Solution:** Engineered a **Temporal Reconciliation Engine**. Using a 100ms reconciliation buffer in the Drizzle subqueries, the system deterministically filters out sender-originated throughput (`ne(userId)`) and ensures that unread counts are only incremented for genuine peer-to-peer intelligence.
 
 ---
 
@@ -110,7 +115,13 @@ Every core flow—from Authentication to Adaptive Layout transitions—is protec
 # Run the automated QA suite
 cd frontend
 npx playwright test
+
+# Run the Sovereign Collaborative Integrity suite
+npx playwright test tests/e2e/collaboration.spec.ts
 ```
+
+### 4. Sovereign Command Modals
+Legacy browser `prompt()` dialogs have been purged in favor of state-driven **Sovereign Command Modals**. This ensures absolute testability via Playwright and maintains the premium glass-morphism aesthetic across all viewport contexts (Rule U1).
 
 ---
 

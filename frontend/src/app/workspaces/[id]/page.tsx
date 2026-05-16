@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function WorkspacePage() {
   const { id } = useParams();
   const router = useRouter();
-  const { setBoard, setLoading, isLoading, activeWorkspace, workspaces, setWorkspaces, setActiveWorkspace } = useWorkspaceStore();
+  const { board, setBoard, setLoading, isLoading, activeWorkspace, workspaces, setWorkspaces, setActiveWorkspace } = useWorkspaceStore();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -34,8 +34,8 @@ export default function WorkspacePage() {
     setLoading(true);
     try {
       const { data } = await api.get(`/kanban/${id}`);
-      setBoard(data.data.columns);
-      
+      setBoard(data.data.columns || []);
+
       socketService.connect();
       if (user) {
         socketService.joinWorkspace(id as string, { id: user.id, name: user.name });
@@ -57,10 +57,10 @@ export default function WorkspacePage() {
       router.push('/login');
       return;
     }
-    
+
     if (mounted && isAuthenticated) {
       fetchBoard();
-      
+
       // Always fetch full detail to ensure members and roles are synchronized
       api.get(`/workspaces/${id}`).then(({ data }) => {
         setActiveWorkspace(data.data);
@@ -75,7 +75,7 @@ export default function WorkspacePage() {
         if (data?.type === 'MEMBER_UPDATED' || data?.type === 'MEMBER_PURGED') {
           api.get(`/workspaces/${id}`).then(({ data }) => {
             setActiveWorkspace(data.data);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
     };
@@ -158,6 +158,9 @@ export default function WorkspacePage() {
       </div>
     );
   }
+  const totalUnread = Array.isArray(board) 
+    ? board.flatMap(c => c.tasks || []).reduce((acc, t) => acc + (Number(t.unread_count) || 0), 0)
+    : 0;
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-background relative">
@@ -166,20 +169,20 @@ export default function WorkspacePage() {
       <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Workspace Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col justify-between px-4 md:px-10 py-4 md:py-8 glass border-b border-border-color relative z-10 gap-4 md:gap-6 lg:flex-row lg:items-center"
       >
         <div className="flex items-center gap-3 md:gap-8">
-          <button 
+          <button
             onClick={() => router.push('/workspaces')}
             className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-lg md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
             title="Back to Sanctuary"
           >
             <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
-          
+
           <div className="flex items-center gap-3 md:gap-5">
             <div className="hidden min-[400px]:flex w-9 h-9 md:w-12 md:h-12 bg-accent-blue/10 rounded-lg md:rounded-2xl items-center justify-center">
               <Layout className="w-5 h-5 md:w-6 md:h-6 text-accent-blue" />
@@ -189,9 +192,9 @@ export default function WorkspacePage() {
                 {activeWorkspace?.name || 'Sanctuary'}
               </h1>
               <div className="flex items-center gap-2">
-                <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-accent-cyan animate-pulse" />
-                <span className="text-[7px] md:text-[10px] font-bold text-text-dim tracking-widest uppercase">
-                  Live Sync
+                <div className={`w-1.5 h-1.5 rounded-full ${totalUnread > 0 ? 'bg-red-500 animate-pulse' : 'bg-accent-cyan animate-pulse'} shadow-[0_0_10px_rgba(239,68,68,0.5)]`} />
+                <span className={`text-[7px] md:text-[10px] font-bold tracking-widest uppercase ${totalUnread > 0 ? 'text-red-500' : 'text-text-dim'}`}>
+                  {totalUnread > 0 ? `${totalUnread} Technical Alerts` : 'Intelligence Sync'}
                 </span>
               </div>
             </div>
@@ -213,7 +216,7 @@ export default function WorkspacePage() {
               >
                 {mind.name.charAt(0).toUpperCase()}
                 <div className="absolute bottom-0 right-0 w-2 h-2 md:w-2.5 md:h-2.5 bg-accent-cyan rounded-full border-2 border-background" />
-                
+
                 {/* Tooltip */}
                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-foreground text-background text-[10px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-smooth pointer-events-none whitespace-nowrap z-50">
                   {mind.name} {mind.userId === user?.id ? '(You)' : ''}
@@ -228,25 +231,25 @@ export default function WorkspacePage() {
           </div>
 
           <div className="flex items-center justify-start sm:justify-end gap-2 md:gap-4">
-          <button 
-            onClick={() => setShowInviteModal(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 glass hover:bg-bg-secondary text-[10px] md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-lg md:rounded-xl group"
-          >
-            <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-smooth" />
-            <span>Invite</span>
-          </button>
-          <button 
-            onClick={() => setShowSettingsModal(true)}
-            className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-lg md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
-          >
-            <Settings className="w-4 h-4 md:w-6 md:h-6 text-foreground" />
-          </button>
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2 md:py-3 glass hover:bg-bg-secondary text-[10px] md:text-sm font-bold transition-smooth text-text-secondary hover:text-foreground rounded-lg md:rounded-xl group"
+            >
+              <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-smooth" />
+              <span>Invite</span>
+            </button>
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="w-9 h-9 md:w-12 md:h-12 flex items-center justify-center glass hover:bg-bg-secondary rounded-lg md:rounded-2xl text-text-dim hover:text-foreground transition-smooth"
+            >
+              <Settings className="w-4 h-4 md:w-6 md:h-6 text-foreground" />
+            </button>
+          </div>
         </div>
-      </div>
-    </motion.div>
-      
+      </motion.div>
+
       {/* AI Orchestration & Actions Bar */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -258,14 +261,14 @@ export default function WorkspacePage() {
             <div className="absolute left-4 text-accent-purple">
               <Zap className="w-5 h-5 fill-accent-purple/20" />
             </div>
-            <input 
+            <input
               type="text"
               placeholder="Orchestrate Technical Goal..."
               className="w-full bg-bg-secondary border border-border-color rounded-xl md:rounded-2xl pl-12 pr-28 md:pr-32 py-3.5 md:py-4 text-foreground focus:border-accent-purple/50 outline-none transition-smooth text-xs md:text-sm font-medium"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
             />
-            <button 
+            <button
               type="submit"
               disabled={isIncepting || isViewer}
               className="absolute right-1.5 px-4 md:px-6 py-2 bg-accent-purple text-foreground rounded-lg md:rounded-xl font-bold text-[10px] md:text-xs hover:bg-accent-purple/80 transition-smooth disabled:opacity-50 flex items-center gap-2"
@@ -277,7 +280,7 @@ export default function WorkspacePage() {
         </form>
 
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <button 
+          <button
             disabled={isViewer}
             className="w-full md:w-auto flex items-center justify-center gap-3 px-6 py-3.5 md:py-4 glass hover:bg-bg-secondary text-xs md:text-sm font-bold text-foreground rounded-xl md:rounded-2xl transition-smooth border-accent-blue/20 hover:border-accent-blue/50 disabled:opacity-30"
             onClick={async () => {
@@ -301,7 +304,7 @@ export default function WorkspacePage() {
       </motion.div>
 
       {/* Kanban Board Area */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
@@ -314,20 +317,20 @@ export default function WorkspacePage() {
       <AnimatePresence>
         {showInviteModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowInviteModal(false)}
               className="absolute inset-0 bg-background/80 backdrop-blur-md"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="w-full max-w-lg glass-card p-10 relative z-10"
             >
-              <button 
+              <button
                 onClick={() => setShowInviteModal(false)}
                 className="absolute top-6 right-6 text-text-dim hover:text-foreground"
               >
@@ -347,7 +350,7 @@ export default function WorkspacePage() {
                   <span className="text-3xl font-mono font-bold text-foreground tracking-[0.2em]">
                     {activeWorkspace?.invite_code || '------'}
                   </span>
-                  <button 
+                  <button
                     onClick={handleCopyCode}
                     className="p-3 bg-accent-blue/10 text-accent-blue rounded-xl hover:bg-accent-blue hover:text-foreground transition-smooth"
                   >
@@ -365,142 +368,142 @@ export default function WorkspacePage() {
 
         {showSettingsModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettingsModal(false)}
               className="absolute inset-0 bg-background/80 backdrop-blur-md"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="w-full max-w-lg glass-card p-10 relative z-10"
             >
-              <button 
+              <button
                 onClick={() => setShowSettingsModal(false)}
                 className="absolute top-6 right-6 text-text-dim hover:text-foreground"
               >
                 <X className="w-6 h-6" />
               </button>
 
-                <div className="space-y-10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-bg-secondary rounded-2xl flex items-center justify-center">
-                      <Settings className="w-7 h-7 text-text-dim" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground font-display">Workspace Settings</h2>
-                      <p className="text-text-secondary text-sm">Configure your collaborative environment.</p>
-                    </div>
+              <div className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-bg-secondary rounded-2xl flex items-center justify-center">
+                    <Settings className="w-7 h-7 text-text-dim" />
                   </div>
-
-                  {/* Member Management */}
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Sanctuary Members</h3>
-                      <span className="text-[10px] font-bold text-accent-blue bg-accent-blue/10 px-3 py-1 rounded-full uppercase tracking-tighter">
-                        {activeWorkspace?.members?.length || 0} Intelligence Links
-                      </span>
-                    </div>
-
-                      <div className="space-y-3">
-                        {activeWorkspace?.members?.map((member) => (
-                          <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-bg-secondary/30 rounded-2xl border border-border-color/50 gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-accent-blue/10 flex items-center justify-center text-accent-blue font-bold shrink-0">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-foreground truncate">{member.name}</p>
-                                <p className="text-[10px] text-text-dim truncate">{member.email}</p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 ml-14 sm:ml-0">
-                              {isAdmin && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
-                                <>
-                                  <select 
-                                    value={member.role}
-                                    onChange={async (e) => {
-                                      try {
-                                        await api.patch(`/workspaces/${activeWorkspace.id}/members/${member.user_id}`, { role: e.target.value });
-                                        toast.success('Role Synchronized');
-                                        // Refresh metadata
-                                        const { data } = await api.get(`/workspaces/${activeWorkspace.id}`);
-                                        setActiveWorkspace(data.data);
-                                      } catch (error) {
-                                        toast.error('Failed to update role');
-                                      }
-                                    }}
-                                    className="bg-bg-secondary border border-border-color rounded-lg px-2 py-1 text-[10px] font-bold text-foreground outline-none focus:border-accent-blue transition-smooth"
-                                  >
-                                    <option value="viewer">Viewer</option>
-                                    <option value="member">Contributor</option>
-                                    <option value="admin">Admin Contributor</option>
-                                  </select>
-                                  <button 
-                                    onClick={async () => {
-                                      if (confirm(`Purge ${member.name} from this sanctuary?`)) {
-                                        try {
-                                          await api.delete(`/workspaces/${activeWorkspace.id}/members/${member.user_id}`);
-                                          toast.success('Member Purged');
-                                          const { data } = await api.get(`/workspaces/${activeWorkspace.id}`);
-                                          setActiveWorkspace(data.data);
-                                        } catch (error) {
-                                          toast.error('Purge failed');
-                                        }
-                                      }
-                                    }}
-                                    className="p-2 text-text-dim hover:text-red-500 transition-smooth"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              ) : (
-                                <span className="text-[10px] font-bold text-text-dim uppercase tracking-widest px-3 py-1 bg-bg-secondary rounded-lg">
-                                  {member.user_id === activeWorkspace.owner_id ? 'Owner' : member.role === 'viewer' ? 'Viewer' : 'Contributor'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                  </div>
-
-                  <div className="space-y-6 pt-6 border-t border-border-color/30">
-                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-3 text-red-500">
-                        <ShieldAlert className="w-5 h-5" />
-                        <h3 className="font-bold">Danger Zone</h3>
-                      </div>
-                      <p className="text-text-secondary text-xs leading-relaxed">
-                        Deleting this workspace will permanently purge all columns, tasks, and member history. This action is irreversible.
-                      </p>
-                      
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest pl-1">Confirm with Password</label>
-                        <input 
-                          type="password"
-                          placeholder="••••••••"
-                          className="w-full bg-bg-secondary border border-red-500/20 rounded-xl px-4 py-3 text-foreground focus:border-red-500/50 outline-none transition-smooth text-sm"
-                          value={deletePassword}
-                          onChange={(e) => setDeletePassword(e.target.value)}
-                        />
-                      </div>
-
-                      <button 
-                        onClick={handleDeleteWorkspace}
-                        disabled={isDeleting || !deletePassword}
-                        className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-foreground font-bold rounded-xl transition-smooth flex items-center justify-center gap-2 disabled:opacity-30"
-                      >
-                        {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                        <span>Purge Workspace</span>
-                      </button>
-                    </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground font-display">Workspace Settings</h2>
+                    <p className="text-text-secondary text-sm">Configure your collaborative environment.</p>
                   </div>
                 </div>
+
+                {/* Member Management */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-foreground uppercase tracking-widest">Sanctuary Members</h3>
+                    <span className="text-[10px] font-bold text-accent-blue bg-accent-blue/10 px-3 py-1 rounded-full uppercase tracking-tighter">
+                      {activeWorkspace?.members?.length || 0} Intelligence Links
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {activeWorkspace?.members?.map((member) => (
+                      <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-bg-secondary/30 rounded-2xl border border-border-color/50 gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-accent-blue/10 flex items-center justify-center text-accent-blue font-bold shrink-0">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-foreground truncate">{member.name}</p>
+                            <p className="text-[10px] text-text-dim truncate">{member.email}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 ml-14 sm:ml-0">
+                          {isAdmin && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
+                            <>
+                              <select
+                                value={member.role}
+                                onChange={async (e) => {
+                                  try {
+                                    await api.patch(`/workspaces/${activeWorkspace.id}/members/${member.user_id}`, { role: e.target.value });
+                                    toast.success('Role Synchronized');
+                                    // Refresh metadata
+                                    const { data } = await api.get(`/workspaces/${activeWorkspace.id}`);
+                                    setActiveWorkspace(data.data);
+                                  } catch (error) {
+                                    toast.error('Failed to update role');
+                                  }
+                                }}
+                                className="bg-bg-secondary border border-border-color rounded-lg px-2 py-1 text-[10px] font-bold text-foreground outline-none focus:border-accent-blue transition-smooth"
+                              >
+                                <option value="viewer">Viewer</option>
+                                <option value="member">Contributor</option>
+                                <option value="admin">Admin Contributor</option>
+                              </select>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Purge ${member.name} from this sanctuary?`)) {
+                                    try {
+                                      await api.delete(`/workspaces/${activeWorkspace.id}/members/${member.user_id}`);
+                                      toast.success('Member Purged');
+                                      const { data } = await api.get(`/workspaces/${activeWorkspace.id}`);
+                                      setActiveWorkspace(data.data);
+                                    } catch (error) {
+                                      toast.error('Purge failed');
+                                    }
+                                  }
+                                }}
+                                className="p-2 text-text-dim hover:text-red-500 transition-smooth"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] font-bold text-text-dim uppercase tracking-widest px-3 py-1 bg-bg-secondary rounded-lg">
+                              {member.user_id === activeWorkspace.owner_id ? 'Owner' : member.role === 'viewer' ? 'Viewer' : 'Contributor'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6 pt-6 border-t border-border-color/30">
+                  <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-3 text-red-500">
+                      <ShieldAlert className="w-5 h-5" />
+                      <h3 className="font-bold">Danger Zone</h3>
+                    </div>
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      Deleting this workspace will permanently purge all columns, tasks, and member history. This action is irreversible.
+                    </p>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-text-dim uppercase tracking-widest pl-1">Confirm with Password</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        className="w-full bg-bg-secondary border border-red-500/20 rounded-xl px-4 py-3 text-foreground focus:border-red-500/50 outline-none transition-smooth text-sm"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleDeleteWorkspace}
+                      disabled={isDeleting || !deletePassword}
+                      className="w-full py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-foreground font-bold rounded-xl transition-smooth flex items-center justify-center gap-2 disabled:opacity-30"
+                    >
+                      {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                      <span>Purge Workspace</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

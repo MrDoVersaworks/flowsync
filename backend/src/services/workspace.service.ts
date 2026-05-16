@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, sql, count, lt, or, isNull, ne } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/connection.js';
 import { workspaces, workspaceMembers, users, tasks, taskComments, taskReads } from '../db/schema.js';
@@ -27,7 +27,6 @@ function toWorkspaceResponse(ws: typeof workspaces.$inferSelect): WorkspaceRespo
 }
 
 export async function createWorkspace(userId: string, name: string): Promise<WorkspaceResponse> {
-  // Check for duplicate names for this user
   const existing = await db
     .select()
     .from(workspaces)
@@ -70,16 +69,35 @@ export async function listUserWorkspaces(
 ): Promise<PaginatedWorkspaceResponse> {
   const offset = (page - 1) * limit;
 
-  // 1. Get total count
   const countResult = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({ totalCount: count() })
     .from(workspaces)
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
     .where(eq(workspaceMembers.user_id, userId));
   
-  const total = countResult[0]?.count || 0;
+  const total = countResult[0]?.totalCount || 0;
 
-  // 2. Get paginated data
+  const unreadCountsSubquery = db
+    .select({
+      workspaceId: tasks.workspace_id,
+      unread_count: count(taskComments.id).as('unread_count'),
+    })
+    .from(taskComments)
+    .innerJoin(tasks, eq(taskComments.task_id, tasks.id))
+    .leftJoin(taskReads, and(
+      eq(taskReads.task_id, tasks.id),
+      eq(taskReads.user_id, userId)
+    ))
+    .where(and(
+      ne(taskComments.user_id, userId),
+      or(
+        isNull(taskReads.last_read_at),
+        lt(taskReads.last_read_at, taskComments.created_at)
+      )
+    ))
+    .groupBy(tasks.workspace_id)
+    .as('unread_counts_ws_sq');
+
   const result = await db
     .select({
       id: workspaces.id,
@@ -87,22 +105,11 @@ export async function listUserWorkspaces(
       owner_id: workspaces.owner_id,
       invite_code: workspaces.invite_code,
       created_at: workspaces.created_at,
-      unread_count: sql<number>`(
-        SELECT count(*)::int 
-        FROM ${taskComments} 
-        INNER JOIN ${tasks} ON ${taskComments.task_id} = ${tasks.id}
-        WHERE ${tasks.workspace_id} = ${workspaces.id}
-        AND ${taskComments.user_id} != ${userId}
-        AND NOT EXISTS (
-          SELECT 1 FROM ${taskReads} 
-          WHERE ${taskReads.task_id} = ${tasks.id} 
-          AND ${taskReads.user_id} = ${userId} 
-          AND ${taskReads.last_read_at} >= ${taskComments.created_at}
-        )
-      )`
+      unread_count: unreadCountsSubquery.unread_count,
     })
     .from(workspaces)
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
+    .leftJoin(unreadCountsSubquery, eq(workspaces.id, unreadCountsSubquery.workspaceId))
     .where(eq(workspaceMembers.user_id, userId))
     .limit(limit)
     .offset(offset)
@@ -112,6 +119,7 @@ export async function listUserWorkspaces(
     data: result.map((ws): any => ({
       ...ws,
       created_at: ws.created_at.toISOString(),
+      unread_count: Number(ws.unread_count) || 0
     })),
     pagination: {
       page,
@@ -164,11 +172,9 @@ export async function getWorkspaceDetail(userId: string, workspaceId: string): P
 
 export async function joinWorkspaceByCode(userId: string, inviteCode: string): Promise<WorkspaceResponse> {
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.invite_code, inviteCode)).limit(1);
-  
   if (wsResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Invalid invite code' };
   }
-
   const workspace = wsResult[0];
 
   const existing = await db
@@ -187,93 +193,39 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
     role: 'member',
   });
 
-  logger.info('DATABASE', `User ${userId} joined workspace: ${workspace.id} via code`);
-
   return toWorkspaceResponse(workspace);
 }
 
 export async function deleteWorkspace(userId: string, workspaceId: string, password?: string): Promise<void> {
-  // 1. Verify User Password first
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (userResult.length === 0) {
-    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
-  }
   const user = userResult[0];
 
-  if (!password) {
-    throw { status: 400, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Verification required. Please provide your password.' };
-  }
-
-  const isValid = await bcrypt.compare(password, user.password_hash);
-  if (!isValid) {
-    throw { status: 401, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Invalid verification credentials. Workspace purge aborted.' };
+  if (!password || !(await bcrypt.compare(password, user.password_hash))) {
+    throw { status: 401, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Invalid verification credentials.' };
   }
 
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
-  
-  if (wsResult.length === 0) {
-    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
-  }
-
-  const workspace = wsResult[0];
-
-  if (workspace.owner_id !== userId) {
+  if (wsResult[0].owner_id !== userId) {
     throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the workspace owner can delete it' };
   }
 
   await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
-  logger.info('DATABASE', `Workspace deleted: ${workspaceId} by owner: ${userId}`);
 }
 
-export async function updateMemberRole(
-  userId: string, 
-  workspaceId: string, 
-  memberId: string, 
-  role: 'admin' | 'member'
-): Promise<void> {
+export async function updateMemberRole(userId: string, workspaceId: string, memberId: string, role: 'admin' | 'member'): Promise<void> {
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
-  if (wsResult.length === 0) {
-    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
-  }
-
   if (wsResult[0].owner_id !== userId) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can reconfigure infrastructure roles.' };
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can reconfigure roles.' };
   }
-
-  if (memberId === userId) {
-    throw { status: 400, code: ErrorCode.VALIDATION_ERROR, message: 'Owners cannot downgrade their own sovereignty.' };
-  }
-
-  await db.update(workspaceMembers)
-    .set({ role })
-    .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
-    
-  // Real-Time Broadcast for role synchronization
+  await db.update(workspaceMembers).set({ role }).where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_UPDATED', workspaceId });
-
-  logger.info('DATABASE', `Member ${memberId} role updated to ${role} in workspace ${workspaceId}`);
 }
 
 export async function removeMember(userId: string, workspaceId: string, memberId: string): Promise<void> {
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
-  if (wsResult.length === 0) {
-    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
-  }
-
   if (wsResult[0].owner_id !== userId) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can purge members from the sanctuary.' };
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only owners can purge members.' };
   }
-
-  if (memberId === userId) {
-    throw { status: 400, code: ErrorCode.VALIDATION_ERROR, message: 'Owners cannot purge themselves. Use Workspace Purge instead.' };
-  }
-
-  await db.delete(workspaceMembers)
-    .where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
-
-  // Real-Time Broadcast
+  await db.delete(workspaceMembers).where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_PURGED', workspaceId });
-
-  logger.info('DATABASE', `Member ${memberId} purged from workspace ${workspaceId}`);
 }
-
