@@ -83,6 +83,10 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 **Challenge:** In high-concurrency environments, unread alerts often "phantom" or persist even after being read due to micro-temporal drift between the app and database.
 **Solution:** Engineered a **Temporal Reconciliation Engine**. Using a 100ms reconciliation buffer in the Drizzle subqueries, the system deterministically filters out sender-originated throughput (`ne(userId)`) and ensures that unread counts are only incremented for genuine peer-to-peer intelligence.
 
+### 5. The Hydration Shield
+**Challenge:** Real-time applications often crash during the "Hydration Cycle" (the microsecond window between page load and WebSocket connection) when attempting to render arrays that haven't arrived yet.
+**Solution:** Developed a **Deterministic Hydration Shield**. By centralizing computations behind `Array.isArray()` safety gates, the interface gracefully degrades to a "0 state" rather than throwing fatal TypeErrors, ensuring a 100% stable initialization sequence.
+
 ---
 
 ## 🛠️ Technical Architecture
@@ -125,17 +129,19 @@ Legacy browser `prompt()` dialogs have been purged in favor of state-driven **So
 
 ---
 
-## 🏗️ Strategic Deployment
+## 🏗️ Strategic Deployment (Monorepo Architecture)
 
-FlowSync is architected for **Multi-Cloud Resilience**:
+FlowSync is architected as a **Monorepo** designed for **Multi-Cloud Resilience**:
 
 ### 1. Frontend (Vercel)
 - **Deployment**: The Next.js 16+ frontend is deployed to Vercel's Global Edge Network.
+- **Monorepo Config**: Root Directory must be set to `frontend` within the Vercel project settings.
 - **Performance**: Global Edge deployment ensures sub-50ms latency for the UI and instant asset delivery.
 
 ### 2. Backend (Render)
 - **Deployment**: The Node.js 20+ backend is hosted on Render's managed compute layer.
-- **Orchestration**: Hosted on a persistent compute layer to maintain stable WebSocket connections for real-time rooms.
+- **Monorepo Config**: Root Directory must be set to `backend` within the Render web service settings.
+- **Anti-Sleep Heartbeat**: A dedicated `cron-job` pings the `/api/health` endpoint every 12 minutes to prevent the Render instance from spinning down, ensuring 24/7 real-time availability.
 
 ### 3. Database (Neon)
 - **Engine**: Serverless PostgreSQL (v16+).
