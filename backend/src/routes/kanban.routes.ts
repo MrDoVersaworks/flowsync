@@ -33,8 +33,8 @@ router.post('/:workspaceId/columns', validate(createColumnSchema), asyncHandler(
 router.post('/:workspaceId/tasks', validate(createTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
-  const { columnId, title } = req.body;
-  const task = await createTask(userId, workspaceId, columnId, title);
+  const { columnId, title, description, priority } = req.body;
+  const task = await createTask(userId, workspaceId, columnId, title, description, priority);
   res.status(201).json({ success: true, data: task });
 }));
 

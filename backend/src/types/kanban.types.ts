@@ -15,8 +15,6 @@ export interface TaskResponse {
   position: number;
   priority: string;
   created_by: string;
-  assigned_to: string | null;
-  due_date: string | null;
   created_at: string;
   updated_at: string;
 }

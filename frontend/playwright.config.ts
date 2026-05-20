@@ -11,6 +11,8 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'on',
+    viewport: { width: 1280, height: 720 },
   },
   projects: [
     {
@@ -21,12 +23,15 @@ export default defineConfig({
       name: 'mobile-chrome',
       use: { ...devices['Pixel 5'] },
     },
+    {
+      name: 'tablet-safari',
+      use: { ...devices['iPad Mini'] },
+    },
   ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    stdout: 'pipe',
-    stderr: 'pipe',
+    reuseExistingServer: true,
+    timeout: 120 * 1000,
   },
 });

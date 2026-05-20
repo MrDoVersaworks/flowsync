@@ -54,13 +54,13 @@ export const createTaskSchema = z.object({
   columnId: z.string().uuid('Invalid column ID'),
   title: z.string().min(1, 'Task title is required').max(255, 'Title too long'),
   description: z.string().max(2000, 'Description too long').optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
 });
 
 export const updateTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(255, 'Title too long').optional(),
   description: z.string().max(10000, 'Description too long').optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  due_date: z.string().datetime().optional().nullable(),
 });
 
 export const moveTaskSchema = z.object({
@@ -79,6 +79,6 @@ export const updateSettingsSchema = z.object({
 // AI Schemas
 export const aiBreakdownSchema = z.object({
   workspaceId: z.string().uuid('Invalid workspace ID'),
-  goal: z.string().min(10, 'Goal must be at least 10 characters').max(5000, 'Goal too long'),
+  goal: z.string().min(3, 'Goal must be at least 3 characters').max(5000, 'Goal too long'),
   targetColumnId: z.string().uuid('Invalid column ID').optional(),
 });

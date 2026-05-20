@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Flag, AlignLeft, Trash2, Clock, CheckCircle2, MessageSquare, Send } from 'lucide-react';
+import { X, Calendar, Flag, AlignLeft, Trash2, Clock, CheckCircle2, MessageSquare, Send, Sparkles } from 'lucide-react';
 import { Task, useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/lib/api';
@@ -31,6 +31,7 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
   const { user } = useAuthStore();
   const { board, setBoard, activeWorkspace } = useWorkspaceStore();
   const isOwner = activeWorkspace?.owner_id === user?.id;
@@ -154,6 +155,24 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
     }
   };
 
+  const handleEnrich = async () => {
+    if (!title.trim() || isEnriching) return;
+    setIsEnriching(true);
+    try {
+      const column = board.find(c => c.id === task.column_id);
+      const { data } = await api.post('/ai/enrich-task', { 
+        title, 
+        columnTitle: column?.title 
+      });
+      setDescription(data.data);
+      toast.success('Technical Context Enriched');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error?.message || 'Enrichment failed');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -191,12 +210,12 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
               <div className="space-y-4">
-                <input 
-                  type="text"
+                <textarea 
                   value={title}
                   disabled={isViewer}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-transparent text-2xl md:text-3xl font-bold text-foreground outline-none focus:text-accent-blue transition-smooth font-display tracking-tight disabled:opacity-80"
+                  rows={2}
+                  className="w-full bg-transparent text-2xl md:text-3xl font-bold text-foreground outline-none focus:text-accent-blue transition-smooth font-display tracking-tight disabled:opacity-80 resize-none overflow-hidden"
                   placeholder="Task Title"
                 />
               </div>
@@ -230,9 +249,26 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
               </div>
 
               <div className="space-y-4">
-                <label className="flex items-center gap-2 text-[10px] font-bold text-text-dim uppercase tracking-widest">
-                  <AlignLeft className="w-3 h-3" /> Technical Breakdown
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-[10px] font-bold text-text-dim uppercase tracking-widest">
+                    <AlignLeft className="w-3 h-3" /> Technical Breakdown
+                  </label>
+                  {!isViewer && (
+                    <button 
+                      onClick={handleEnrich}
+                      disabled={isEnriching || !title.trim()}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-accent-cyan hover:text-accent-cyan/80 transition-smooth uppercase tracking-widest disabled:opacity-50"
+                      title="Enrich with AI"
+                    >
+                      {isEnriching ? (
+                        <span className="w-3 h-3 border-2 border-accent-cyan/30 border-t-accent-cyan rounded-full animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                      Enrich with AI
+                    </button>
+                  )}
+                </div>
                 <textarea 
                   value={description}
                   disabled={isViewer}

@@ -45,6 +45,19 @@ export default function RegisterPage() {
           <p className="text-text-secondary text-lg">Join FlowSync and orchestrate your flow</p>
         </div>
 
+        <div className="flex items-center gap-4 p-4 mb-8 bg-accent-blue/5 border border-accent-blue/10 rounded-2xl">
+          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-accent-blue/10 rounded-xl text-accent-blue">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-accent-blue uppercase tracking-widest mb-1">Frictionless Client Demo</p>
+            <p className="text-xs text-text-dim leading-relaxed">
+              Email verification is temporarily disabled to allow immediate access. 
+              Any dummy email will work.
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="full-name" className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">

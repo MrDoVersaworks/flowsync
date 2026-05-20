@@ -181,11 +181,11 @@ export default function SettingsPage() {
                   <CheckCircle2 className="w-4 h-4 text-accent-cyan" />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-[10px] uppercase tracking-[0.2em] text-text-dim font-bold">Email Address</label>
-                <div className="flex items-center space-x-3 text-text-secondary text-lg">
-                  <Mail className="w-4 h-4" />
-                  <span>{user?.email}</span>
+                <div className="flex items-center space-x-3 text-text-secondary text-lg overflow-hidden">
+                  <Mail className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{user?.email}</span>
                 </div>
               </div>
             </div>

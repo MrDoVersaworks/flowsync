@@ -8,9 +8,18 @@ const inter = Inter({ subsets: ['latin'] });
 
 import PageTransition from '@/components/layout/PageTransition';
 
-export const metadata = {
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
   title: 'FlowSync | Sovereign AI Workflow Orchestration',
   description: 'Manage your workspaces, kanban boards, and AI breakdowns with absolute sovereignty.',
+  keywords: ['AI orchestration', 'kanban', 'sovereign workspace', 'workflow management', 'productivity'],
+  authors: [{ name: 'Oyewole Favour' }],
+  openGraph: {
+    title: 'FlowSync | Sovereign AI Workflow Orchestration',
+    description: 'Manage your workspaces, kanban boards, and AI breakdowns with absolute sovereignty.',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

@@ -52,13 +52,12 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
 
     Instructions:
     1. Break it down into 5 to 8 actionable, technical tasks.
-    ${targetColumnData ? `2. ALL tasks will be placed in the "[${targetColumnData.title}]" column.` : `2. If the goal is a COMPLETELY NEW project/category compared to existing tasks, suggest a new column name for it (e.g., "Architecture", "Foundation", "Logic").
-    3. If the goal fits into an existing column (like "Backlog" or "In Progress"), use that column title.`}
-    4. Ensure the new tasks DO NOT duplicate existing ones.
+    ${targetColumnData ? `2. ALL tasks will be placed in the "[${targetColumnData.title}]" column.` : `2. ALWAYS suggest a NEW, concise column title specifically named after this goal (e.g., "Stripe Integration", "Auth Layer"). DO NOT use generic names like "Backlog".`}
+    3. Ensure the new tasks are highly technical and actionable.
 
     Return ONLY a JSON object with this exact structure:
     {
-      "suggested_column_title": "${targetColumnData ? targetColumnData.title : 'Title of the column these tasks should go into'}",
+      "suggested_column_title": "${targetColumnData ? targetColumnData.title : 'New specific column title'}",
       "tasks": [
         {
           "title": "Task title",
@@ -82,22 +81,14 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
 
     // 4. Grounding: Find or Create the suggested column
     let columnId: string;
-    
+
     if (targetColumnId) {
       columnId = targetColumnId;
     } else {
-      const suggestedTitle = parsed.suggested_column_title || 'Backlog';
-      let targetColumn = await db.select().from(columns)
-        .where(and(eq(columns.workspace_id, workspaceId), eq(columns.title, suggestedTitle)))
-        .limit(1);
-      
-      if (targetColumn.length === 0) {
-        // Create the new column using the service to handle position/events
-        const newCol = await createColumn(userId, workspaceId, suggestedTitle);
-        columnId = newCol.id;
-      } else {
-        columnId = targetColumn[0].id;
-      }
+      const suggestedTitle = parsed.suggested_column_title || 'New Goal Expansion';
+      // ALWAYS create a new column for a new goal as requested by the user
+      const newCol = await createColumn(userId, workspaceId, suggestedTitle);
+      columnId = newCol.id;
     }
 
     // 4. Infrastructure Inception: Bulk Insert Tasks
@@ -120,7 +111,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     return parsed.tasks;
   } catch (error: any) {
     logger.error('ERROR', `Technical breakdown aborted`, error);
-    
+
     // Propagate specific Google AI errors if available
     const status = error.status || 500;
     let message = 'Technical orchestration aborted. Please verify your AI configuration.';
@@ -137,10 +128,53 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
       message = error.message.split(':').pop()?.trim() || message;
     }
 
-    throw { 
+    throw {
       status: status === 429 ? 429 : status, // Preserve 429 status for the client
-      code: ErrorCode.AI_SERVICE_ERROR, 
-      message 
+      code: ErrorCode.AI_SERVICE_ERROR,
+      message
+    };
+  }
+}
+
+export async function enrichTask(userId: string, title: string, columnTitle?: string): Promise<string> {
+  const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (userResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
+  }
+
+  const user = userResult[0];
+  const apiKey = await getDecryptedApiKey(userId);
+  const modelName = user.gemini_model_config || DEFAULT_AI_MODEL;
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: modelName });
+
+  const prompt = `
+    You are a technical project orchestrator.
+    Generate a deep, professional technical breakdown and description for the following task title:
+    Title: "${title}"
+    ${columnTitle ? `Column Context: "${columnTitle}"` : ''}
+
+    Instructions:
+    1. Provide a concise but comprehensive technical description.
+    2. Focus on implementation details, potential challenges, and required technical stacks.
+    ${columnTitle ? `3. Ensure the breakdown is highly relevant to the goal of the "[${columnTitle}]" column.` : ''}
+    4. Start with "[AI] " followed by the description.
+    5. Keep it between 50 and 200 words.
+
+    Return ONLY the text description.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text().trim();
+  } catch (error: any) {
+    logger.error('ERROR', `Task enrichment failed`, error);
+    throw {
+      status: error.status || 500,
+      code: ErrorCode.AI_SERVICE_ERROR,
+      message: 'Failed to enrich technical context.'
     };
   }
 }

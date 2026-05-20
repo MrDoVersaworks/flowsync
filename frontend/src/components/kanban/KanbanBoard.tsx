@@ -105,25 +105,7 @@ export default function KanbanBoard({ isViewer }: Props) {
       const overColId = over.data.current?.task.column_id;
 
       if (activeColId !== overColId) {
-        const activeCol = board.find(c => c.id === activeColId);
-        const overCol = board.find(c => c.id === overColId);
-        if (!activeCol || !overCol) return;
-
-        const activeIndex = activeCol.tasks.findIndex(t => t.id === activeId);
-        const overIndex = overCol.tasks.findIndex(t => t.id === overId);
-
-        const newBoard = board.map(col => {
-          if (col.id === activeColId) {
-            return { ...col, tasks: col.tasks.filter(t => t.id !== activeId) };
-          }
-          if (col.id === overColId) {
-            const newTasks = [...col.tasks];
-            newTasks.splice(overIndex, 0, active.data.current?.task);
-            return { ...col, tasks: newTasks };
-          }
-          return col;
-        });
-        setBoard(newBoard);
+        return; // Disable cross-column dragging
       }
     }
 
@@ -134,16 +116,7 @@ export default function KanbanBoard({ isViewer }: Props) {
       const overColId = overId;
 
       if (activeColId !== overColId) {
-        const newBoard = board.map(col => {
-          if (col.id === activeColId) {
-            return { ...col, tasks: col.tasks.filter(t => t.id !== activeId) };
-          }
-          if (col.id === overColId) {
-            return { ...col, tasks: [...col.tasks, active.data.current?.task] };
-          }
-          return col;
-        });
-        setBoard(newBoard);
+        return; // Disable cross-column dragging
       }
     }
   };
@@ -160,13 +133,46 @@ export default function KanbanBoard({ isViewer }: Props) {
 
     if (activeId === overId) return;
 
+    // Guard: Reject drag in columns with fewer than 2 tasks (prevents white-screen crash)
+    const sourceColId = active.data.current?.task?.column_id;
+    const sourceColumn = sourceColId ? board.find(c => c.id === sourceColId) : null;
+    if (sourceColumn && sourceColumn.tasks.filter(t => t && t.id).length < 2) return;
+
+    // Safety check to prevent cross-column persistence
+    const activeColId = active.data.current?.task.column_id;
+    const overColId = over.data.current?.task?.column_id || over.id;
+    if (activeColId !== overColId) return;
+
+    // Visually reorder cards within the same column
+    const column = board.find(c => c.id === activeColId);
+    if (column) {
+      const activeIndex = column.tasks.findIndex(t => t.id === activeId);
+      const overIndex = column.tasks.findIndex(t => t.id === overId);
+      
+      if (activeIndex !== overIndex) {
+        const newBoard = board.map(col => {
+          if (col.id === activeColId) {
+            const newTasks = [...col.tasks];
+            const [movedTask] = newTasks.splice(activeIndex, 1);
+            newTasks.splice(overIndex, 0, movedTask);
+            return { ...col, tasks: newTasks };
+          }
+          return col;
+        });
+        setBoard(newBoard);
+      }
+    }
+
     // Persist to Backend
     try {
-      await api.post(`/kanban/${activeWorkspace?.id}/tasks/move`, {
+      const targetColumn = board.find(c => c.id === (over.data.current?.task?.column_id || over.id));
+      const overIndex = targetColumn?.tasks.findIndex(t => t.id === overId) ?? 0;
+
+      await api.post(`/kanban/${activeWorkspace?.id}/move`, {
         taskId: activeId,
         fromColumnId: active.data.current?.task.column_id,
         toColumnId: over.data.current?.task?.column_id || over.id,
-        newPosition: 0 // Simplification for now
+        newPosition: overIndex
       });
     } catch (error) {
       console.error('Failed to persist move');
@@ -189,22 +195,18 @@ export default function KanbanBoard({ isViewer }: Props) {
         </div>
 
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 md:py-4 glass border border-border-color rounded-2xl text-sm font-bold text-text-dim hover:text-foreground hover:border-accent-blue/30 transition-smooth">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
           <button
             onClick={() => setIsColumnModalOpen(true)}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 md:py-4 bg-accent-blue text-foreground rounded-2xl text-sm font-bold shadow-lg shadow-accent-blue/20 hover:bg-accent-blue/80 transition-smooth"
           >
             <Plus className="w-4 h-4" />
-            Add Infrastructure
+            Add Infrastructure Column
           </button>
         </div>
       </div>
 
       {/* Kanban Board Container */}
-      <div className="flex-1 min-h-0 relative">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 md:pb-10 px-4 md:px-10 scrollbar-hide select-none custom-scrollbar">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -212,15 +214,13 @@ export default function KanbanBoard({ isViewer }: Props) {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="h-full flex overflow-x-auto pb-10 px-4 md:px-10 scrollbar-hide select-none custom-scrollbar">
-            <div className="flex gap-6 h-full items-start">
+          <div className="flex gap-6 h-full items-start">
               <SortableContext items={filteredBoard.map(col => col.id)} strategy={horizontalListSortingStrategy}>
                 {filteredBoard.map(column => (
                   <KanbanColumn key={column.id} column={column} isViewer={false} />
                 ))}
               </SortableContext>
             </div>
-          </div>
 
           <DragOverlay dropAnimation={{
             sideEffects: defaultDropAnimationSideEffects({
@@ -254,7 +254,7 @@ export default function KanbanBoard({ isViewer }: Props) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-lg glass-card p-10 relative z-10"
+              className="w-full max-w-lg glass-card p-10 relative z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <button
                 onClick={() => setIsColumnModalOpen(false)}

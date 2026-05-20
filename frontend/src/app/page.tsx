@@ -2,7 +2,7 @@
 
 import { useAuthStore } from '@/store/useAuthStore';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Sparkles, Zap, Boxes, ShieldCheck, Globe, Cpu, Share2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, Boxes, ShieldCheck, Globe, Cpu, Share2, TrendingUp, Code2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRef } from 'react';
 import NeuralNetwork from '@/components/layout/NeuralNetwork';
@@ -21,11 +21,11 @@ export default function Home() {
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
 
   const features = [
-    { icon: Zap, color: 'text-accent-blue', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for high-performance sync.' },
-    { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition and blueprinting via Gemini AI orchestration.' },
-    { icon: Share2, color: 'text-accent-cyan', title: 'Collaborative Chat', desc: 'Task-anchored reconciliation feed for persistent technical discussion.' },
+    { icon: TrendingUp, color: 'text-accent-blue', title: 'Accelerated Velocity ROI', desc: 'Accelerate sprint delivery by instantly converting high-level goals into actionable technical blueprints.' },
+    { icon: Code2, color: 'text-accent-purple', title: '100% Type-Safe', desc: 'Engineered with absolute strictness. Zero runtime errors, deterministic state, and Lighthouse-optimized.' },
+    { icon: Zap, color: 'text-accent-cyan', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for high-performance, real-time sync.' },
     { icon: ShieldCheck, color: 'text-accent-blue', title: 'Atomic Permissions', desc: 'Granular Role-Based Access Control: Owners, Contributors, and Viewers.' },
-    { icon: Boxes, color: 'text-accent-purple', title: 'Inception Engine', desc: 'Orchestrate entire technical stacks with a single sovereign goal.' },
+    { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via Gemini AI orchestration (BYOK architecture).' },
     { icon: Cpu, color: 'text-accent-cyan', title: 'Sovereign Vault', desc: 'Secure technical sanctuary with AES-256 local encryption standards.' }
   ];
 
@@ -127,7 +127,12 @@ export default function Home() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-accent-blue/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-accent-blue/10 transition-smooth" />
                 
                 <div className="w-12 h-12 md:w-16 md:h-16 bg-bg-secondary rounded-xl md:rounded-2xl flex items-center justify-center group-hover:bg-accent-blue/10 transition-smooth relative z-10">
-                  <feature.icon className={`w-6 h-6 md:w-8 md:h-8 ${feature.color}`} />
+                  <motion.div
+                    animate={idx < 2 ? { scale: [1, 1.1, 1] } : {}}
+                    transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                  >
+                    <feature.icon className={`w-6 h-6 md:w-8 md:h-8 ${feature.color}`} />
+                  </motion.div>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-bold font-display text-foreground relative z-10">{feature.title}</h3>
                 <p className="text-sm md:text-base text-text-secondary leading-relaxed relative z-10">{feature.desc}</p>
@@ -161,6 +166,14 @@ export default function Home() {
           ))}
         </motion.div>
       </section>
+
+      {/* Dynamic Recruiter Footer */}
+      <footer className="border-t border-white/5 bg-black/40 py-12 px-6 text-center text-text-secondary text-sm relative z-10">
+        <p className="mb-2">FlowSync Real-Time Task Orchestration — Engineered with Next.js & Express.</p>
+        <p className="font-bold text-foreground">
+          Architected by <span className="text-accent-blue">Oyewole Favour</span>
+        </p>
+      </footer>
     </div>
   );
 }

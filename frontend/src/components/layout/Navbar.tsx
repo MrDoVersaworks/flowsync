@@ -61,20 +61,20 @@ export default function Navbar() {
 
           {isAuthenticated ? (
             <nav className="hidden md:flex items-center gap-3 md:gap-6">
-              <Link 
-                href="/workspaces" 
+              <Link
+                href="/workspaces"
                 className={`text-[10px] md:text-sm font-bold uppercase tracking-wider transition-smooth ${pathname.includes('/workspaces') ? 'text-foreground' : 'text-text-secondary hover:text-foreground'}`}
               >
                 Boards
               </Link>
-              
+
               {/* Sovereign Guide Dropdown */}
               <div className="relative group px-1">
                 <button className={`text-[10px] md:text-sm font-bold uppercase tracking-wider transition-smooth flex items-center gap-1.5 ${pathname.includes('/guide') ? 'text-foreground' : 'text-text-secondary hover:text-foreground'}`}>
                   Guide
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform group-hover:rotate-180`} />
                 </button>
-                
+
                 <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-smooth z-50">
                   <div className="w-56 glass-card p-4 border border-border-color shadow-2xl space-y-1">
                     {[
@@ -84,7 +84,7 @@ export default function Navbar() {
                       { id: 'reconciliation', label: 'Reconciliation', icon: Zap, color: 'text-accent-cyan' },
                       { id: 'sovereignty', label: 'Permissions', icon: ShieldCheck, color: 'text-accent-red' },
                     ].map((item) => (
-                      <Link 
+                      <Link
                         key={item.id}
                         href={`/guide/${item.id}`}
                         className="flex items-center gap-3 p-3 rounded-xl hover:bg-bg-secondary transition-smooth group/item"
@@ -97,14 +97,14 @@ export default function Navbar() {
                 </div>
               </div>
 
-              <Link 
-                href="/settings" 
+              <Link
+                href="/settings"
                 className={`text-[10px] md:text-sm font-bold uppercase tracking-wider transition-smooth ${pathname === '/settings' ? 'text-foreground' : 'text-text-secondary hover:text-foreground'}`}
               >
                 Settings
               </Link>
-              <a 
-                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support" 
+              <a
+                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support"
                 className="hidden sm:inline-flex text-[10px] md:text-sm font-bold uppercase tracking-wider text-text-secondary hover:text-accent-blue transition-smooth border border-accent-blue/20 px-3 py-1 rounded-full hover:bg-accent-blue/5"
                 title="Direct Access to Architect Oyewole Favour"
               >
@@ -123,9 +123,9 @@ export default function Navbar() {
                 </div>
                 <span className="hidden sm:inline text-xs font-medium text-text-secondary">{user?.name}</span>
               </div>
-              
+
               <div className="hidden md:flex items-center">
-                <button 
+                <button
                   onClick={handleLogout}
                   className="p-2 hover:bg-bg-secondary rounded-lg text-text-secondary hover:text-foreground transition-smooth"
                   title="Logout"
@@ -135,7 +135,7 @@ export default function Navbar() {
               </div>
 
               {/* Mobile Menu Toggle */}
-              <button 
+              <button
                 className="md:hidden p-2 hover:bg-bg-secondary rounded-lg text-text-secondary transition-smooth"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
@@ -148,14 +148,14 @@ export default function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-4">
-              <Link 
-                href="/login" 
+              <Link
+                href="/login"
                 className="text-sm font-medium text-text-secondary hover:text-foreground transition-smooth whitespace-nowrap"
               >
                 Sign In
               </Link>
-              <Link 
-                href="/register" 
+              <Link
+                href="/register"
                 className="btn-primary px-4 py-2 text-sm"
               >
                 Get Started
@@ -175,15 +175,15 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-background pt-20 px-6 md:hidden"
           >
             <nav className="flex flex-col gap-6 py-10">
-              <Link 
-                href="/workspaces" 
+              <Link
+                href="/workspaces"
                 className="text-2xl font-bold text-foreground font-display flex items-center justify-between group"
               >
                 <span>Boards</span>
                 <Layout className="w-6 h-6 text-accent-blue" />
               </Link>
-              <Link 
-                href="/settings" 
+              <Link
+                href="/settings"
                 className="text-2xl font-bold text-foreground font-display flex items-center justify-between group"
               >
                 <span>Settings</span>
@@ -200,7 +200,7 @@ export default function Navbar() {
                     { id: 'reconciliation', label: 'Reconciliation', icon: Zap, color: 'text-accent-cyan' },
                     { id: 'sovereignty', label: 'Permissions', icon: ShieldCheck, color: 'text-accent-red' },
                   ].map((item) => (
-                    <Link 
+                    <Link
                       key={item.id}
                       href={`/guide/${item.id}`}
                       className="flex items-center gap-3 p-4 rounded-2xl bg-bg-secondary border border-border-color"
@@ -211,8 +211,8 @@ export default function Navbar() {
                   ))}
                 </div>
               </div>
-              <a 
-                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support" 
+              <a
+                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support"
                 className="text-2xl font-bold text-accent-blue font-display flex items-center justify-between group"
               >
                 <span>Support</span>
@@ -220,9 +220,9 @@ export default function Navbar() {
                   <div className="w-2 h-2 rounded-full bg-accent-blue" />
                 </div>
               </a>
-              
+
               <div className="mt-10 pt-10 border-t border-border-color">
-                <button 
+                <button
                   onClick={handleLogout}
                   className="w-full py-4 bg-bg-secondary text-red-500 font-bold rounded-2xl flex items-center justify-center gap-3"
                 >

@@ -4,15 +4,16 @@ import { Task } from '@/store/useWorkspaceStore';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { 
-  Calendar, 
   Clock, 
   MessageSquare, 
   CheckCircle2, 
   AlertCircle,
-  MoreVertical,
-  User,
-  Hash
+  Hash,
+  Trash2
 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import TaskModal from './TaskModal';
@@ -25,6 +26,11 @@ interface Props {
 
 export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { board, setBoard } = useWorkspaceStore();
+
+  // Guard: skip rendering if task data is malformed (prevents white-screen crash)
+  if (!task || !task.id) return null;
   
   const {
     attributes,
@@ -81,10 +87,10 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
         {unreadCount > 0 && (
           <div className="absolute top-3 right-3 z-50" data-testid="task-beacon">
             <div className="relative flex items-center justify-center">
-              <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping absolute" />
-              <div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,1)] relative" />
-              <div className="absolute -top-6 right-0 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-smooth whitespace-nowrap pointer-events-none">
-                {unreadCount} UNREAD NOTES
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-ping absolute" />
+              <div className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,1)] relative" />
+              <div className="absolute top-4 right-0 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-smooth whitespace-nowrap pointer-events-none z-[60]">
+                {unreadCount} NEW NOTES
               </div>
             </div>
           </div>
@@ -94,15 +100,44 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
           <div className={`px-3 py-1 rounded-lg border text-[10px] font-black uppercase tracking-widest ${priorityColors[task.priority]}`}>
             {task.priority}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-dim uppercase tracking-tighter">
-            <Hash className="w-3 h-3" />
-            STK-{task.id.slice(0, 4).toUpperCase()}
+          <div className="flex items-center gap-1.5">
+            <div className="text-[10px] font-bold text-text-dim uppercase tracking-tighter flex items-center gap-1">
+              <Hash className="w-3 h-3" />
+              STK-{(task.id || '').slice(0, 4).toUpperCase()}
+            </div>
+            
+            {!isViewer && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm('Purge this task?')) {
+                    setIsDeleting(true);
+                    api.delete(`/kanban/${task.workspace_id}/tasks/${task.id}`)
+                      .then(() => {
+                        const newBoard = board.map(col => ({
+                          ...col,
+                          tasks: col.tasks.filter(t => t.id !== task.id)
+                        }));
+                        setBoard(newBoard);
+                        toast.success('Task Purged');
+                      })
+                      .catch(() => toast.error('Purge failed'))
+                      .finally(() => setIsDeleting(false));
+                  }
+                }}
+                disabled={isDeleting}
+                className="p-1.5 text-text-dim hover:text-red-500 transition-smooth opacity-100 md:opacity-0 md:group-hover:opacity-100 disabled:opacity-50"
+                title="Purge Task"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
         <div className="mb-4">
           <div className="overflow-hidden">
-            <h3 className={`text-base font-bold text-foreground leading-tight tracking-tight group-hover:text-accent-blue transition-smooth ${task.title.length > 28 ? 'animate-marquee hover:pause' : 'truncate'}`}>
+            <h3 className={`text-base font-bold text-foreground leading-tight tracking-tight group-hover:text-accent-blue transition-smooth ${task.title.length > 20 ? 'animate-marquee hover:pause' : 'truncate'}`}>
               {task.title}
             </h3>
           </div>
@@ -118,18 +153,6 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
             <div className="flex items-center gap-1.5 text-text-dim group-hover:text-foreground transition-smooth">
               <MessageSquare className="w-3.5 h-3.5" />
               <span className="text-xs font-bold">{task.comment_count || 0}</span>
-            </div>
-            {task.due_date && (
-              <div className="flex items-center gap-1.5 text-text-dim">
-                <Calendar className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold">{new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-bg-secondary border border-border-color flex items-center justify-center overflow-hidden">
-              <User className="w-4 h-4 text-text-dim" />
             </div>
           </div>
         </div>

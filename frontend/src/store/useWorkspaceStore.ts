@@ -25,8 +25,6 @@ export interface Task {
   position: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   created_by: string;
-  assigned_to: string | null;
-  due_date: string | null;
   created_at: string;
   updated_at: string;
   comment_count?: number;

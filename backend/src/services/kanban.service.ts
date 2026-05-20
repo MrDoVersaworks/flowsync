@@ -68,8 +68,6 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
       description: tasks.description,
       priority: tasks.priority,
       position: tasks.position,
-      assigned_to: tasks.assigned_to,
-      due_date: tasks.due_date,
       created_by: tasks.created_by,
       created_at: tasks.created_at,
       updated_at: tasks.updated_at,
@@ -92,7 +90,6 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
           ...t,
           created_at: t.created_at.toISOString(),
           updated_at: t.updated_at.toISOString(),
-          due_date: t.due_date ? t.due_date.toISOString() : null,
           comment_count: Number(t.comment_count) || 0,
           unread_count: Number(t.unread_count) || 0
         })),
@@ -130,7 +127,7 @@ export async function createColumn(userId: string, workspaceId: string, title: s
   return response;
 }
 
-export async function createTask(userId: string, workspaceId: string, columnId: string, title: string): Promise<TaskResponse> {
+export async function createTask(userId: string, workspaceId: string, columnId: string, title: string, description?: string, priority?: string): Promise<TaskResponse> {
   await verifyMembership(userId, workspaceId);
 
   const maxPosResult = await db
@@ -144,6 +141,8 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
     workspace_id: workspaceId,
     column_id: columnId,
     title,
+    description,
+    priority: priority || 'medium',
     position: nextPos,
     created_by: userId,
   }).returning();
@@ -153,7 +152,6 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
     ...task,
     created_at: task.created_at.toISOString(),
     updated_at: task.updated_at.toISOString(),
-    due_date: task.due_date ? task.due_date.toISOString() : null,
   };
 
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_CREATED', workspaceId });
@@ -168,7 +166,7 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
       ...data,
       updated_at: new Date(),
     })
-    .where(eq(tasks.id, taskId))
+    .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
     .returning();
 
   if (updated.length === 0) {
@@ -180,7 +178,6 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
     ...task,
     created_at: task.created_at.toISOString(),
     updated_at: task.updated_at.toISOString(),
-    due_date: task.due_date ? task.due_date.toISOString() : null,
   };
 
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_UPDATED', workspaceId });
@@ -195,13 +192,13 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
     await db.transaction(async (tx) => {
       await tx.update(tasks)
         .set({ position: newPosition })
-        .where(eq(tasks.id, taskId));
+        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)));
     });
   } else {
     await db.transaction(async (tx) => {
       await tx.update(tasks)
         .set({ column_id: toColumnId, position: newPosition })
-        .where(eq(tasks.id, taskId));
+        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)));
     });
   }
 

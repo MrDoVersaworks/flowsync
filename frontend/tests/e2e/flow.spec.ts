@@ -10,60 +10,94 @@ test.describe('FlowSync Sovereign Engineering Flow', () => {
     taskTitle: 'Automated Integrity Check'
   };
 
-  test('should complete the full technical lifecycle', async ({ page }) => {
-    // 1. Registration
+  test('should complete the exhaustive technical lifecycle', async ({ page }) => {
+    // 1. Landing & Initial Impression
+    await page.goto('/');
+    await expect(page).toHaveTitle(/FlowSync/);
+    await expect(page.getByRole('heading', { name: /Synchronize Your Reality/i })).toBeVisible();
+
+    // 2. Registration (Random Identity Inception)
     await page.goto('/register');
     await page.getByLabel(/Full Name/i).fill(testUser.name);
     await page.getByLabel(/Email Address/i).fill(testUser.email);
     await page.getByLabel(/Password/i).fill(testUser.password);
+    const registerPromise = page.waitForResponse(resp => resp.url().includes('/auth/register'));
     await page.getByRole('button', { name: /Create Account/i }).click();
+    await registerPromise;
 
-    // Verify Redirect to Workspaces
-    await expect(page).toHaveURL(/\/workspaces/);
-    await expect(page.getByText(/You don't have any workspaces yet/i)).toBeVisible();
+    // 3. Theme Orchestration (Light/Dark Toggle)
+    // Handle Mobile Navigation if needed
+    const mobileMenuBtn = page.locator('button.md\\:hidden');
+    const isMobile = await mobileMenuBtn.isVisible();
+    
+    if (isMobile) {
+      await mobileMenuBtn.click();
+      await page.getByRole('link', { name: /Settings/i }).click();
+    } else {
+      await page.goto('/settings');
+    }
 
-    // 2. Create Workspace
-    await page.getByRole('button', { name: /Incept Workspace/i }).click();
-    await page.getByPlaceholder(/Workspace Name/i).fill(testUser.workspaceName);
-    await page.getByRole('button', { name: /Incept/i }).click();
+    await expect(page.getByText(/Dark Mode/i)).toBeVisible();
+    await page.getByRole('button', { name: /Dark Mode/i }).click();
+    await expect(page.getByText(/Light Mode/i)).toBeVisible();
+    await page.getByRole('button', { name: /Light Mode/i }).click(); // Back to premium dark
+    await expect(page.getByText(/Dark Mode/i)).toBeVisible();
 
-    // Verify Workspace Creation
+    // 4. Workspace Architecture
+    if (isMobile) {
+      await mobileMenuBtn.click();
+      await page.getByRole('link', { name: /Boards/i }).click();
+    } else {
+      await page.goto('/workspaces');
+    }
+    await expect(page.getByText(/The Void is Waiting/i)).toBeVisible();
+    await page.getByPlaceholder(/Orchestrate New.../i).fill(testUser.workspaceName);
+    await page.locator('form').first().locator('button').click();
     await expect(page.getByText(testUser.workspaceName)).toBeVisible();
     await page.getByText(testUser.workspaceName).click();
 
-    // 3. Board Management
-    // Add Column
-    await page.getByRole('button', { name: /Add Column/i }).click();
-    await page.getByPlaceholder(/Column Title/i).fill('To Do');
-    await page.getByRole('button', { name: /Create/i }).click();
-    await expect(page.getByText('To Do')).toBeVisible();
+    // 5. Board Orchestration & AI Inception
+    // Add Manual Infrastructure
+    await page.getByRole('button', { name: "Add Infrastructure", exact: true }).click();
+    await page.getByPlaceholder(/e.g., Tactical Backlog/i).fill('Core Infrastructure');
+    await page.getByRole('button', { name: /Confirm Inception/i }).click();
+    await expect(page.getByText('Core Infrastructure')).toBeVisible();
 
-    // Add Task
-    const addTaskBtn = page.locator('button:has-text("Add Task")').first();
-    await addTaskBtn.click();
-    await page.getByPlaceholder(/Task Title/i).fill(testUser.taskTitle);
-    await page.getByRole('button', { name: /Add Task/i }).click();
-    await expect(page.getByText(testUser.taskTitle)).toBeVisible();
-
-    // 4. Presence Check (User should see their own token)
-    const presenceBar = page.locator('.flex.items-center.-space-x-2');
-    await expect(presenceBar).toBeVisible();
+    // Trigger AI Goal Inception
+    const goalInput = page.getByPlaceholder(/Orchestrate Technical Goal.../i);
+    await goalInput.fill('Deploy a high-availability Redis cluster for session synchronization');
+    await page.getByRole('button', { name: 'Incept', exact: true }).click();
     
-    // 5. Settings & Purge
-    await page.goto('/settings');
-    await expect(page.getByText(testUser.name)).toBeVisible();
+    // Wait for AI to orchestrate the new column and tasks
+    await page.waitForTimeout(5000); 
+    await expect(page.getByText(/Redis Cluster/i).or(page.getByText(/Session Sync/i))).toBeVisible({ timeout: 20000 });
 
-    // Verify BYOK (Vault) - Optional but good
-    await expect(page.getByText(/AI Sanctuary/i)).toBeVisible();
+    // 6. Task Reconciliation & Collaborative Note
+    const firstTask = page.locator('.task-card').first();
+    await firstTask.click();
+    
+    // Enrich with AI
+    await page.getByRole('button', { name: /Enrich with AI/i }).click();
+    await page.waitForTimeout(3000); // AI generation time
+    
+    // Add Collaborative reconciliation note
+    await page.getByPlaceholder(/Add a technical note.../i).fill('Primary node topology verified. Ready for deployment sync.');
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(/Primary node topology verified/i)).toBeVisible();
+    await page.getByRole('button', { name: /Close/i }).or(page.locator('button:has(svg.lucide-x)')).first().click();
 
-    // 6. Account Purge (Verification of Data Sovereignty)
+    // 7. Sovereign Purge (Verification of Data Sovereignty)
+    if (isMobile) {
+      await mobileMenuBtn.click();
+      await page.getByRole('link', { name: /Settings/i }).click();
+    } else {
+      await page.goto('/settings');
+    }
     await page.getByRole('button', { name: /Initiate Sovereign Purge/i }).click();
     await page.getByPlaceholder(/Enter your password to confirm/i).fill(testUser.password);
-    
-    const finalPurgeBtn = page.getByRole('button', { name: /Confirm Purge/i });
-    await finalPurgeBtn.click();
+    await page.getByRole('button', { name: /Confirm Purge/i }).click();
 
-    // Verify Redirect to Login after purge
+    // Final Redirection
     await expect(page).toHaveURL(/\/login/);
   });
 });

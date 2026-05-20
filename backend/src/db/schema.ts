@@ -12,7 +12,7 @@ export const users = pgTable('users', {
   encrypted_gemini_key: text('encrypted_gemini_key'),
   gemini_key_iv: varchar('gemini_key_iv', { length: 24 }),
   gemini_key_tag: varchar('gemini_key_tag', { length: 32 }),
-  gemini_model_config: varchar('gemini_model_config', { length: 100 }).default('gemini-1.5-flash'),
+  gemini_model_config: varchar('gemini_model_config', { length: 100 }).default('gemini-2.5-flash'),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -61,8 +61,6 @@ export const tasks = pgTable('tasks', {
   position: integer('position').notNull(),
   priority: varchar('priority', { length: 20 }).notNull().default('medium'), // 'low' | 'medium' | 'high' | 'urgent'
   created_by: uuid('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  assigned_to: uuid('assigned_to').references(() => users.id, { onDelete: 'cascade' }),
-  due_date: timestamp('due_date', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -114,7 +112,6 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   workspace: one(workspaces, { fields: [tasks.workspace_id], references: [workspaces.id] }),
   column: one(columns, { fields: [tasks.column_id], references: [columns.id] }),
   creator: one(users, { fields: [tasks.created_by], references: [users.id] }),
-  assignee: one(users, { fields: [tasks.assigned_to], references: [users.id] }),
   comments: many(taskComments),
 }));
 

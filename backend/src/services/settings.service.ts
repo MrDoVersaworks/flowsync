@@ -11,8 +11,8 @@ export interface UserSettingsResponse {
 }
 
 export async function updateUserSettings(
-  userId: string, 
-  geminiKey?: string, 
+  userId: string,
+  geminiKey?: string,
   modelConfig?: string
 ): Promise<UserSettingsResponse> {
   const updateData: any = { updated_at: new Date() };
@@ -40,7 +40,7 @@ export async function updateUserSettings(
 
 export async function getUserSettings(userId: string): Promise<UserSettingsResponse> {
   const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  
+
   if (user.length === 0) {
     throw { status: 404, code: ErrorCode.AUTH_NOT_FOUND, message: 'User not found' };
   }
@@ -69,7 +69,7 @@ export async function clearUserModel(userId: string): Promise<void> {
 
 export async function getDecryptedApiKey(userId: string): Promise<string> {
   const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  
+
   if (result.length === 0 || !result[0].encrypted_gemini_key) {
     throw { status: 400, code: ErrorCode.AI_SERVICE_ERROR, message: 'Gemini API key not configured. Please add it in settings.' };
   }

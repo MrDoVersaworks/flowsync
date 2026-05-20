@@ -69,6 +69,7 @@
     border-color: var(--glass-border);
     background: var(--card-bg);
     background-clip: padding-box;
+    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
 
@@ -157,4 +158,11 @@
 .marquee-container {
   overflow: hidden;
   mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+/* Hide Next.js Dev Indicators for Clean Recording */
+next-route-announcer, 
+#__next-build-watcher, 
+[data-nextjs-toast-wrapper],
+.nextjs-static-indicator {
+  display: none !important;
 }

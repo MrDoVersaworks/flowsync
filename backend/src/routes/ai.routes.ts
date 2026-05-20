@@ -1,5 +1,5 @@
 import { Response, Router } from 'express';
-import { breakdownGoal } from '../services/ai.service.js';
+import { breakdownGoal, enrichTask } from '../services/ai.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { validate, aiBreakdownSchema } from '../middleware/validation.js';
@@ -14,6 +14,19 @@ router.post('/breakdown', validate(aiBreakdownSchema), asyncHandler(async (req: 
   
   if (req.timedout) return;
   res.status(200).json({ success: true, data: tasks });
+}));
+
+// Enrich a single task title with a technical description
+router.post('/enrich-task', asyncHandler(async (req: AuthRequest, res: Response) => {
+  const userId = req.user!.userId;
+  const { title, columnTitle } = req.body;
+  
+  if (!title) {
+    return res.status(400).json({ success: false, message: 'Title is required' });
+  }
+
+  const description = await enrichTask(userId, title, columnTitle);
+  res.status(200).json({ success: true, data: description });
 }));
 
 export default router;

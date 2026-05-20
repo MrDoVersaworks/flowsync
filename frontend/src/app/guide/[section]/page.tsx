@@ -48,11 +48,11 @@ export default function GuideSectionPage() {
       border: 'border-accent-cyan/20',
       title: 'Synchronize',
       subtitle: 'AI-Driven Goal Decomposition',
-      content: 'Transform high-level vision into an actionable technical roadmap using our AI Inception engine. Simply input a technical goal, and the system will call upon your configured AI model to architect a detailed blueprint of Kanban tasks. These tasks serve as a structured guide for your own implementation, providing the strategic framework needed to build complex systems.',
+      content: 'Transform high-level vision into an actionable technical roadmap using our AI Inception engine. Every mission now utilizes Context-Aware Enrichment—meaning the system calls upon your private AI model to architect a blueprint grounded specifically in your column\'s technical goal. Whether incepting a new board or enriching an existing task, the system ensures strategic alignment across your entire infrastructure.',
       protocols: [
         'Incept goals via the dynamic orchestration bar.',
-        'Automatic task decomposition into Kanban columns.',
-        'Deterministic state updates via Socket.io synchronization.'
+        'Enrich existing cards with context-aware technical breakdowns.',
+        'Automatic task decomposition grounded in column goals.'
       ]
     },
     {

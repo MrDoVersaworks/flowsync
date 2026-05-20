@@ -163,7 +163,7 @@ export default function WorkspacePage() {
     : 0;
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-background relative">
+    <div className="h-[calc(100vh-64px)] flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar bg-background relative">
       {/* Subtle Background Atmosphere */}
       <div className="absolute top-0 right-0 w-[30%] h-[30%] bg-accent-blue/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[30%] h-[30%] bg-accent-purple/5 rounded-full blur-[100px] pointer-events-none" />
@@ -278,29 +278,6 @@ export default function WorkspacePage() {
             </button>
           </div>
         </form>
-
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <button
-            disabled={isViewer}
-            className="w-full md:w-auto flex items-center justify-center gap-3 px-6 py-3.5 md:py-4 glass hover:bg-bg-secondary text-xs md:text-sm font-bold text-foreground rounded-xl md:rounded-2xl transition-smooth border-accent-blue/20 hover:border-accent-blue/50 disabled:opacity-30"
-            onClick={async () => {
-              const title = prompt('Sanctuary Column Title:');
-              if (title) {
-                try {
-                  const { data } = await api.post(`/kanban/${id}/columns`, { title });
-                  const state = useWorkspaceStore.getState();
-                  state.setBoard([...state.board, { ...data.data, tasks: [] }]);
-                  toast.success('Column Orchestrated');
-                } catch (error) {
-                  toast.error('Orchestration failed');
-                }
-              }
-            }}
-          >
-            <Plus className="w-4 h-4 md:w-5 md:h-5 text-accent-blue" />
-            <span>Add Infrastructure Column</span>
-          </button>
-        </div>
       </motion.div>
 
       {/* Kanban Board Area */}
@@ -308,7 +285,7 @@ export default function WorkspacePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex-1 overflow-hidden p-4 md:p-10 relative z-10"
+        className="flex-1 flex flex-col overflow-hidden pt-4 md:pt-10 relative z-10 min-h-[70vh] md:min-h-[500px]"
       >
         <KanbanBoard isViewer={isViewer} />
       </motion.div>
@@ -328,7 +305,7 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-lg glass-card p-10 relative z-10"
+              className="w-full max-w-lg glass-card p-10 relative z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <button
                 onClick={() => setShowInviteModal(false)}
@@ -379,7 +356,7 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-lg glass-card p-10 relative z-10"
+              className="w-full max-w-lg glass-card p-10 relative z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <button
                 onClick={() => setShowSettingsModal(false)}
@@ -411,17 +388,17 @@ export default function WorkspacePage() {
                   <div className="space-y-3">
                     {activeWorkspace?.members?.map((member) => (
                       <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-bg-secondary/30 rounded-2xl border border-border-color/50 gap-4">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                           <div className="w-10 h-10 rounded-full bg-accent-blue/10 flex items-center justify-center text-accent-blue font-bold shrink-0">
                             {member.name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-foreground truncate">{member.name}</p>
                             <p className="text-[10px] text-text-dim truncate">{member.email}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 ml-14 sm:ml-0">
+                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
                           {isAdmin && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
                             <>
                               <select
@@ -437,7 +414,7 @@ export default function WorkspacePage() {
                                     toast.error('Failed to update role');
                                   }
                                 }}
-                                className="bg-bg-secondary border border-border-color rounded-lg px-2 py-1 text-[10px] font-bold text-foreground outline-none focus:border-accent-blue transition-smooth"
+                                className="bg-bg-secondary border border-border-color rounded-lg px-2 py-2 sm:py-1 text-[10px] font-bold text-foreground outline-none focus:border-accent-blue transition-smooth w-full sm:w-auto flex-1 sm:flex-none"
                               >
                                 <option value="viewer">Viewer</option>
                                 <option value="member">Contributor</option>
@@ -456,13 +433,13 @@ export default function WorkspacePage() {
                                     }
                                   }
                                 }}
-                                className="p-2 text-text-dim hover:text-red-500 transition-smooth"
+                                className="p-3 sm:p-2 bg-red-500/10 sm:bg-transparent text-red-500 rounded-lg sm:rounded-none hover:bg-red-500/20 sm:hover:bg-transparent transition-smooth shrink-0"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4 sm:w-4 sm:h-4" />
                               </button>
                             </>
                           ) : (
-                            <span className="text-[10px] font-bold text-text-dim uppercase tracking-widest px-3 py-1 bg-bg-secondary rounded-lg">
+                            <span className="text-[10px] font-bold text-text-dim uppercase tracking-widest px-3 py-2 bg-bg-secondary rounded-lg w-full sm:w-auto text-center">
                               {member.user_id === activeWorkspace.owner_id ? 'Owner' : member.role === 'viewer' ? 'Viewer' : 'Contributor'}
                             </span>
                           )}

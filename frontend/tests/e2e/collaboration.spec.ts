@@ -51,15 +51,15 @@ test.describe('FlowSync Collaborative Intelligence Integrity', () => {
     await expect(ownerPage.getByText(/Expand the Sanctuary/i)).not.toBeVisible();
 
     // 3. Add Infrastructure
-    await ownerPage.getByRole('button', { name: /Add Infrastructure/i }).click();
-    await ownerPage.getByPlaceholder(/Tactical Backlog/i).fill('Missions');
-    await ownerPage.getByRole('button', { name: /Confirm Inception/i }).click();
+    await ownerPage.getByRole('button', { name: /Add Column/i }).click();
+    await ownerPage.getByPlaceholder(/Column Title/i).fill('Missions');
+    await ownerPage.getByRole('button', { name: /Create/i }).click();
     await expect(ownerPage.getByText('Missions')).toBeVisible();
     
     // 4. Add Task
-    const addTaskBtn = ownerPage.locator('button:has-text("Incept Task")').first();
+    const addTaskBtn = ownerPage.locator('button:has-text("Add Task")').first();
     await addTaskBtn.click();
-    await ownerPage.getByPlaceholder(/Implement Sovereign Middleware/i).fill(taskTitle);
+    await ownerPage.getByPlaceholder(/Task Title/i).fill(taskTitle);
     await ownerPage.getByRole('button', { name: /Confirm Inception/i }).click();
     await expect(ownerPage.getByText(taskTitle)).toBeVisible();
 
