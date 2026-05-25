@@ -157,4 +157,13 @@ graph TD
 > **Schema Fix Applied:** The `createTaskSchema` validation middleware was updated to include the `priority` field. Previously, priority set in the inception modal was silently stripped by Zod before reaching the service layer.
 
 > [!TIP]
-> **Recording Demos:** To record this protocol for presentation, run Playwright with the `--headed` flag and capture with Cursorful or OBS. The deliberate pauses (`waitForTimeout`) ensure the viewer has ample time to read dynamic prompts and observe real-time UI transitions.
+> **Headed Recording:** To record a video demo with a visible browser window, run:
+> ```bash
+> cd frontend
+> HEADED=1 npx playwright test
+> ```
+> On Windows PowerShell:
+> ```powershell
+> cd frontend
+> $env:HEADED=1; npx playwright test
+> ```
