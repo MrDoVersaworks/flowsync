@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Layout, LogOut, Settings, Plus, ChevronDown, Sparkles, Users, Zap, ShieldCheck } from 'lucide-react';
+import ContactModal from '../shared/ContactModal';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -103,13 +105,13 @@ export default function Navbar() {
               >
                 Settings
               </Link>
-              <a
-                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support"
+              <button
+                onClick={() => setContactOpen(true)}
                 className="hidden sm:inline-flex text-[10px] md:text-sm font-bold uppercase tracking-wider text-text-secondary hover:text-accent-blue transition-smooth border border-accent-blue/20 px-3 py-1 rounded-full hover:bg-accent-blue/5"
                 title="Direct Access to Architect Oyewole Favour"
               >
                 Support
-              </a>
+              </button>
             </nav>
           ) : null}
         </div>
@@ -211,15 +213,18 @@ export default function Navbar() {
                   ))}
                 </div>
               </div>
-              <a
-                href="mailto:mrdoofficial1@gmail.com?subject=FlowSync%20Architectural%20Support"
-                className="text-2xl font-bold text-accent-blue font-display flex items-center justify-between group"
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setContactOpen(true);
+                }}
+                className="text-2xl font-bold text-accent-blue font-display flex items-center justify-between group w-full text-left"
               >
                 <span>Support</span>
                 <div className="w-6 h-6 rounded-full bg-accent-blue/10 flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-accent-blue" />
                 </div>
-              </a>
+              </button>
 
               <div className="mt-10 pt-10 border-t border-border-color">
                 <button
@@ -234,6 +239,8 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   );
 }

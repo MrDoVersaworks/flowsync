@@ -111,6 +111,10 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 **Challenge:** Real-time applications often crash during the "Hydration Cycle" (the microsecond window between page load and WebSocket connection) when attempting to render arrays that haven't arrived yet.
 **Solution:** Developed a **Deterministic Hydration Shield**. By centralizing computations behind `Array.isArray()` safety gates, the interface gracefully degrades to a "0 state" rather than throwing fatal TypeErrors, ensuring a 100% stable initialization sequence.
 
+### 6. Zero-Leak Contact Forms & Multi-Tenant Scoping
+**Challenge:** Exposing direct developer emails invites automated spam harvesting, and real-time workspaces present high-risk multi-tenant data leakage vectors (IDOR) where User A could hijack User B's sprint boards.
+**Solution:** Integrated a secure client-side Contact Form utilizing React state handlers that routes messages through system channels. The collaboration backend implements absolute database constraints via Drizzle ORM to verify that every board query, socket action, and data deletion is strictly scoped to the user's verified tenant ID.
+
 ---
 
 ## 🛠️ Technical Architecture
@@ -231,7 +235,7 @@ FlowSync is architected as a **Unified Monorepo** designed for **Single-Cloud Pe
 FlowSync is part of a high-innovation portfolio series.
 
 **Architected by Oyewole Favour**  
-📧 [mrdoofficial1@gmail.com](mailto:mrdoofficial1@gmail.com)  
+📧 Contact via the in-app **Contact Form** (accessible from the navigation bar)  
 💼 [LinkedIn](https://www.linkedin.com/in/mrdoversaworks/)  
 🌐 [GitHub](https://github.com/MrDoVersaworks/)
 
