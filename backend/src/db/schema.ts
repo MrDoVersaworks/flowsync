@@ -13,6 +13,13 @@ export const users = pgTable('users', {
   gemini_key_iv: varchar('gemini_key_iv', { length: 24 }),
   gemini_key_tag: varchar('gemini_key_tag', { length: 32 }),
   gemini_model_config: varchar('gemini_model_config', { length: 100 }).default('gemini-2.5-flash'),
+  
+  // Email Notification Settings (Retrofit)
+  encrypted_resend_key: text('encrypted_resend_key'),
+  resend_key_iv: varchar('resend_key_iv', { length: 32 }),
+  resend_key_tag: varchar('resend_key_tag', { length: 32 }),
+  notification_email: varchar('notification_email', { length: 255 }),
+
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -60,6 +67,8 @@ export const tasks = pgTable('tasks', {
   description: text('description'),
   position: integer('position').notNull(),
   priority: varchar('priority', { length: 20 }).notNull().default('medium'), // 'low' | 'medium' | 'high' | 'urgent'
+  assigned_to: uuid('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+  due_date: timestamp('due_date', { withTimezone: true }),
   created_by: uuid('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -86,6 +95,29 @@ export const taskReads = pgTable('task_reads', {
 }, (t) => ({
   pk: primaryKey({ columns: [t.user_id, t.task_id] }),
 }));
+
+// ============================================================
+// TABLE: contact_messages (Hidden Inbox)
+// ============================================================
+export const contactMessages = pgTable('contact_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sender_name: varchar('sender_name', { length: 255 }).notNull(),
+  sender_email: varchar('sender_email', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  is_read: boolean('is_read').notNull().default(false),
+  ai_screening_passed: boolean('ai_screening_passed').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================
+// TABLE: system_settings (Global Config)
+// ============================================================
+export const systemSettings = pgTable('system_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  google_analytics_id: varchar('google_analytics_id', { length: 50 }),
+  termly_uuid: varchar('termly_uuid', { length: 50 }),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 // ============================================================
 // RELATIONS

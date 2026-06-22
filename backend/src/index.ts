@@ -20,7 +20,7 @@ const server = http.createServer(app);
 // ============================================================
 const io = new Server(server, {
   cors: {
-    origin: [config.allowedOrigin, 'http://127.0.0.1:3000'],
+    origin: [config.allowedOrigin],
     methods: ['GET', 'POST'],
     credentials: true,
   }
@@ -37,8 +37,11 @@ import authRoutes from './routes/auth.routes.js';
 import workspaceRoutes from './routes/workspace.routes.js';
 import kanbanRoutes from './routes/kanban.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import publicRoutes from './routes/public.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import commentRoutes from './routes/comment.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import contactRoutes from './routes/contact.routes.js';
 
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
@@ -46,8 +49,11 @@ import commentRoutes from './routes/comment.routes.js';
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
 // ============================================================
-app.use(helmet());
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Let the Next.js frontend handle CSP for rendering
+  frameguard: { action: 'deny' }, // Prevent clickjacking
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Strict Transport Security
+}));
 app.use(cors({
   origin: config.allowedOrigin.includes(',')
     ? config.allowedOrigin.split(',').map(o => o.trim())
@@ -84,6 +90,8 @@ app.use('/api/settings', timeout('15s'), haltOnTimeout, generalRateLimiter, auth
 // AI routes require more time for generative inception
 app.use('/api/ai', timeout('60s'), haltOnTimeout, generalRateLimiter, aiRateLimiter, authMiddleware, aiRoutes);
 app.use('/api/comments', timeout('15s'), haltOnTimeout, generalRateLimiter, authMiddleware, commentRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/contact', contactRoutes);
 
 // ============================================================
 // 404 HANDLER

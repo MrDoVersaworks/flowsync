@@ -40,6 +40,10 @@ graph TD
 * **Objective:** Establish the primary tenant identity.
 * **Payload:** Generates unique `demo_${timestamp}_desktop@flowsync.test` credentials on each run — deterministic and non-colliding.
 
+### 2b. Contact & Inbox Form Demo
+* **Objective:** Verify the public contact gateway and AI screening.
+* **Payload:** Submits a test inquiry with the Sovereign API key for BYOK-enabled AI screening.
+
 ### 3. Settings & BYOK (Bring Your Own Key) Setup
 * **Objective:** Anchor custom LLM parameters and API credentials before any AI interaction.
 * **Steps:**

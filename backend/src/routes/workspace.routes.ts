@@ -11,11 +11,12 @@ import {
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { validate, createWorkspaceSchema, joinWorkspaceSchema } from '../middleware/validation.js';
+import { cacheMiddleware, invalidateCache } from '../utils/cache.js';
 
 const router = Router();
 
 // Get all workspaces for current user (Paginated)
-router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/', cacheMiddleware(60), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;
@@ -29,11 +30,14 @@ router.post('/', validate(createWorkspaceSchema), asyncHandler(async (req: AuthR
   const userId = req.user!.userId;
   const { name } = req.body;
   const workspace = await createWorkspace(userId, name);
+  
+  invalidateCache('/api/workspaces', userId);
+  
   res.status(201).json({ success: true, data: workspace });
 }));
 
 // Get workspace detail (members, tasks, etc)
-router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:id', cacheMiddleware(60), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
   const detail = await getWorkspaceDetail(userId, workspaceId);
@@ -47,6 +51,7 @@ router.patch('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res
   const memberId = req.params.memberId as string;
   const { role } = req.body;
   await updateMemberRole(userId, workspaceId, memberId, role);
+  invalidateCache('/api/workspaces', userId);
   res.status(200).json({ success: true, message: 'Role synchronized' });
 }));
 
@@ -56,6 +61,7 @@ router.delete('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, re
   const workspaceId = req.params.id as string;
   const memberId = req.params.memberId as string;
   await removeMember(userId, workspaceId, memberId);
+  invalidateCache('/api/workspaces', userId);
   res.status(200).json({ success: true, message: 'Member purged' });
 }));
 
@@ -64,6 +70,7 @@ router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: Aut
   const userId = req.user!.userId;
   const { inviteCode } = req.body;
   const workspace = await joinWorkspaceByCode(userId, inviteCode);
+  invalidateCache('/api/workspaces', userId);
   res.status(200).json({ success: true, data: workspace });
 }));
 
@@ -73,6 +80,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const workspaceId = req.params.id as string;
   const { password } = req.body;
   await deleteWorkspace(userId, workspaceId, password);
+  invalidateCache('/api/workspaces', userId);
   res.status(200).json({ success: true, message: 'Workspace deleted' });
 }));
 

@@ -3,7 +3,7 @@ import { ErrorCode } from '../constants.js';
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per window for auth (Login/Register)
+  max: 20, // Limit each IP to 20 requests per window for auth (Login/Register)
   message: {
     success: false,
     error: {

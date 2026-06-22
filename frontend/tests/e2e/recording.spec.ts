@@ -87,6 +87,23 @@ for (const vp of viewports) {
       await autoScroll(page, vp.name);
       console.log(`[SOVEREIGN] ${vp.name}: --- STEP 1 DONE ---`);
 
+      // --- STEP 1b: CONTACT DEMO ---
+      console.log(`[SOVEREIGN] ${vp.name}: --- STARTING STEP 1b: Contact Demo ---`);
+      const contactBtn = page.locator('button:has-text("Contact"), a:has-text("Contact")').first();
+      if (await contactBtn.isVisible()) {
+          await contactBtn.click();
+          await page.waitForTimeout(1000);
+          await page.locator('input[type="text"]').first().fill(`Observer (${vp.name})`);
+          await page.locator('input[type="email"]').first().fill(email);
+          await page.locator('textarea').first().fill('Interested in Sovereign architecture. Please reach out.');
+          const keyInput = page.locator('input[type="password"]');
+          if (await keyInput.isVisible()) await keyInput.fill(SYSTEM_API_KEY);
+          await page.waitForTimeout(1000);
+          await page.locator('form').getByRole('button', { name: /Send/i }).click();
+          await page.waitForTimeout(3000);
+      }
+      console.log(`[SOVEREIGN] ${vp.name}: --- STEP 1b DONE ---`);
+
 
       // --- STEP 2: REGISTRATION ---
       console.log(`[SOVEREIGN] ${vp.name}: --- STARTING STEP 2: Registration ---`);
@@ -437,6 +454,24 @@ for (const vp of viewports) {
       await page.locator('#login-password').fill(password);
       await page.getByRole('button', { name: /Sign In/i }).click();
       await page.waitForURL('**/workspaces', { timeout: 20000 });
+
+      console.log(`[SOVEREIGN] ${vp.name}: Checking Admin Inbox...`);
+      await page.goto('http://localhost:3000/admin/inbox');
+      await page.waitForTimeout(3000);
+      await autoScroll(page, vp.name);
+      const markReadBtn = page.locator('button[title="Mark as read"], button:has-text("Mark Read")').first();
+      if (await markReadBtn.isVisible()) {
+          await markReadBtn.click();
+          await page.waitForTimeout(2000);
+      }
+      const purgeMsgBtn = page.locator('button[title="Purge Message"], button:has-text("Purge")').first();
+      if (await purgeMsgBtn.isVisible()) {
+          page.once('dialog', async dialog => dialog.accept());
+          await purgeMsgBtn.click();
+          await page.waitForTimeout(2000);
+      }
+      await page.goto('http://localhost:3000/workspaces');
+      await page.waitForTimeout(2000);
 
       console.log(`[SOVEREIGN] ${vp.name}: Entering workspace for governance...`);
       const ownerWorkspaceCard2 = page.getByText('Sovereign Architecture').first();

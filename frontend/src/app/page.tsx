@@ -6,6 +6,8 @@ import { ArrowRight, Sparkles, Zap, Boxes, ShieldCheck, Globe, Cpu, Share2, Tren
 import Link from 'next/link';
 import { useRef } from 'react';
 import NeuralNetwork from '@/components/layout/NeuralNetwork';
+import { PlatformReviews, Review } from '@/components/PlatformReviews';
+import { UnifiedFooter } from '@/components/UnifiedFooter';
 
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
@@ -27,6 +29,12 @@ export default function Home() {
     { icon: ShieldCheck, color: 'text-accent-blue', title: 'Atomic Permissions', desc: 'Granular Role-Based Access Control: Owners, Contributors, and Viewers.' },
     { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via Gemini AI orchestration (BYOK architecture).' },
     { icon: Cpu, color: 'text-accent-cyan', title: 'Sovereign Vault', desc: 'Secure technical sanctuary with AES-256 local encryption standards.' }
+  ];
+
+  const mockReviews: Review[] = [
+    { id: '1', name: 'David Kim', rating: 5, profession: 'Product Manager', feedback: 'FlowSync bridged the gap between our abstract goals and concrete technical tasks. The real-time socket sync is flawless.' },
+    { id: '2', name: 'Aisha Patel', rating: 5, profession: 'Engineering Lead', feedback: 'We ditched Jira for FlowSync. The AI decomposition feature alone saves us 10+ hours per sprint in planning.' },
+    { id: '3', name: 'James Wilson', rating: 5, profession: 'Full-Stack Developer', feedback: 'Finally, a project management tool that speaks engineer. 100% type-safe, absolutely zero fluff.' }
   ];
 
   return (
@@ -167,13 +175,15 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Dynamic Recruiter Footer */}
-      <footer className="border-t border-white/5 bg-black/40 py-12 px-6 text-center text-text-secondary text-sm relative z-10">
-        <p className="mb-2">FlowSync Real-Time Task Orchestration — Engineered with Next.js & Express.</p>
-        <p className="font-bold text-foreground">
-          Architected by <span className="text-accent-blue">Oyewole Favour</span>
-        </p>
-      </footer>
+      <div style={{ position: 'relative', zIndex: 10, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+        <PlatformReviews reviews={mockReviews} />
+      </div>
+
+      <UnifiedFooter 
+        platformName="FlowSync Real-Time Task Orchestration" 
+        techStack="Next.js & Express"
+        contactLink="https://devpulse.tech"
+      />
     </div>
   );
 }
