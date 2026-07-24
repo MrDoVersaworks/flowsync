@@ -90,14 +90,6 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 
 ---
 
-## 🎬 Sovereign Inception: Full System Walkthrough
- 
-[![FlowSync Full Demo](https://github.com/MrDoVersaworks/flowsync/blob/main/videos/full_walkthrough.mp4)](https://github.com/MrDoVersaworks/flowsync/blob/main/videos/full_walkthrough.mp4)
- 
-*A continuous technical walkthrough of the FlowSync ecosystem: From the Landing Hero and Secure Auth to Real-Time Infrastructure Orchestration and Context-Aware AI Enrichment.*
-
----
-
 ## 🧩 The Engineering Challenge
 
 ### 1. The Real-Time Race Condition
@@ -194,9 +186,6 @@ If you wish to see the system test itself across every feature (Registration, AI
    - **Desktop Perspective:** The browser opens and registers a demo account.
    - **Manual Pause:** The script pauses for 30 seconds at each stage to allow you to initiate a screen recorder (like *Cursorful*).
    - **Exhaustive Testing:** The robot physically configures the AI security vault, incepts a technical goal into the Kanban board, and cleans up.
-
-### 3. The Technical Walkthrough (Video)
-View the [Full System Recording](https://github.com/MrDoVersaworks/flowsync/blob/main/videos/full_walkthrough.mp4) for a narrated deep-dive into the architectural decisions and security layers.
 
 ---
 
