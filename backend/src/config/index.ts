@@ -9,6 +9,10 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ALLOWED_ORIGIN: z.string().default('http://localhost:3000'),
+  PUSHER_APP_ID: z.string().optional(),
+  PUSHER_KEY: z.string().optional(),
+  PUSHER_SECRET: z.string().optional(),
+  PUSHER_CLUSTER: z.string().optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -42,4 +46,8 @@ export const config = {
   aesKey: env.AES_KEY,
   nodeEnv: env.NODE_ENV,
   allowedOrigin: env.ALLOWED_ORIGIN,
+  pusherAppId: env.PUSHER_APP_ID,
+  pusherKey: env.PUSHER_KEY,
+  pusherSecret: env.PUSHER_SECRET,
+  pusherCluster: env.PUSHER_CLUSTER,
 };

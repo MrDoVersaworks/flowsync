@@ -5,6 +5,7 @@ import { ErrorCode, SocketEvent } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
 import { io } from '../index.js';
+import { broadcastRealtime } from '../utils/pusher.js';
 
 async function verifyMembership(userId: string, workspaceId: string) {
   const membership = await db
@@ -123,7 +124,9 @@ export async function createColumn(userId: string, workspaceId: string, title: s
 
   const col = inserted[0];
   const response = { ...col, created_at: col.created_at.toISOString() };
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_CREATED', workspaceId });
+  const payload = { type: 'COLUMN_CREATED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
   return response;
 }
 
@@ -154,7 +157,9 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
     updated_at: task.updated_at.toISOString(),
   };
 
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_CREATED', workspaceId });
+  const payload = { type: 'TASK_CREATED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
   return response;
 }
 
@@ -180,7 +185,9 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
     updated_at: task.updated_at.toISOString(),
   };
 
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_UPDATED', workspaceId });
+  const payload = { type: 'TASK_UPDATED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
   return response;
 }
 
@@ -202,7 +209,9 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
     });
   }
 
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_MOVED', workspaceId });
+  const payload = { type: 'TASK_MOVED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
 }
 
 export async function deleteTask(userId: string, workspaceId: string, taskId: string): Promise<void> {
@@ -216,7 +225,9 @@ export async function deleteTask(userId: string, workspaceId: string, taskId: st
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'TASK_DELETED', workspaceId });
+  const payload = { type: 'TASK_DELETED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
 }
 
 export async function deleteColumn(userId: string, workspaceId: string, columnId: string): Promise<void> {
@@ -227,5 +238,7 @@ export async function deleteColumn(userId: string, workspaceId: string, columnId
     await tx.delete(columns).where(and(eq(columns.id, columnId), eq(columns.workspace_id, workspaceId)));
   });
 
-  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'COLUMN_DELETED', workspaceId });
+  const payload = { type: 'COLUMN_DELETED', workspaceId };
+  io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, payload);
+  broadcastRealtime(workspaceId, SocketEvent.BOARD_UPDATED, payload);
 }
