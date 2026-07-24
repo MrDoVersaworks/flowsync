@@ -1,28 +1,52 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+
+interface NeuronData {
+  id: number;
+  x: number;
+  y: number;
+  animDuration: number;
+  animDelay: number;
+}
+
+interface SynapseData {
+  from: number;
+  to: number;
+  animDuration: number;
+  animDelay: number;
+}
+
+interface PulseNodeData {
+  id: number;
+  x: number;
+  y: number;
+  delay: number;
+}
 
 export default function NeuralNetwork() {
-  const [neurons, setNeurons] = useState<{ id: number; x: number; y: number }[]>([]);
-  const [synapses, setSynapses] = useState<{ from: number; to: number }[]>([]);
-  const [pulseNodes, setPulseNodes] = useState<{ id: number; x: number; y: number; delay: number }[]>([]);
+  const [neurons, setNeurons] = useState<NeuronData[]>([]);
+  const [synapses, setSynapses] = useState<SynapseData[]>([]);
+  const [pulseNodes, setPulseNodes] = useState<PulseNodeData[]>([]);
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     
-    // Generate a fixed set of neurons
-    const newNeurons = Array.from({ length: 40 }).map((_, i) => ({
+    // Generate a fixed set of neurons with pre-computed animation values
+    const newNeurons: NeuronData[] = Array.from({ length: 40 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
+      animDuration: 3 + Math.random() * 2,
+      animDelay: Math.random() * 4,
     }));
     setNeurons(newNeurons);
 
-    // Connect close neurons
-    const newSynapses: { from: number; to: number }[] = [];
+    // Connect close neurons with pre-computed animation values
+    const newSynapses: SynapseData[] = [];
     for (let i = 0; i < newNeurons.length; i++) {
       for (let j = i + 1; j < newNeurons.length; j++) {
         const dist = Math.sqrt(
@@ -30,14 +54,19 @@ export default function NeuralNetwork() {
           Math.pow(newNeurons[i].y - newNeurons[j].y, 2)
         );
         if (dist < 15) {
-          newSynapses.push({ from: i, to: j });
+          newSynapses.push({
+            from: i,
+            to: j,
+            animDuration: 3 + Math.random() * 3,
+            animDelay: Math.random() * 5,
+          });
         }
       }
     }
     setSynapses(newSynapses);
 
     // Generate pulse nodes
-    const newPulseNodes = Array.from({ length: 5 }).map((_, i) => ({
+    const newPulseNodes: PulseNodeData[] = Array.from({ length: 5 }).map((_, i) => ({
       id: i,
       x: Math.random() * 80 + 10,
       y: Math.random() * 80 + 10,
@@ -70,10 +99,10 @@ export default function NeuralNetwork() {
                 opacity: [0.1, 0.4, 0.1],
               }}
               transition={{ 
-                duration: 3 + Math.random() * 3, 
+                duration: syn.animDuration, 
                 repeat: Infinity, 
                 ease: "easeInOut",
-                delay: Math.random() * 5
+                delay: syn.animDelay
               }}
             />
           );
@@ -90,9 +119,9 @@ export default function NeuralNetwork() {
             opacity: [0.3, 1, 0.3],
           }}
           transition={{
-            duration: 3 + Math.random() * 2,
+            duration: neuron.animDuration,
             repeat: Infinity,
-            delay: Math.random() * 4,
+            delay: neuron.animDelay,
           }}
         />
       ))}
@@ -122,4 +151,3 @@ export default function NeuralNetwork() {
     </div>
   );
 }
-

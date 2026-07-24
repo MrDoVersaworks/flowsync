@@ -64,15 +64,16 @@ export default function WorkspacePage() {
       // Always fetch full detail to ensure members and roles are synchronized
       api.get(`/workspaces/${id}`).then(({ data }) => {
         setActiveWorkspace(data.data);
-      }).catch(err => {
-        console.error('Failed to fetch workspace metadata', err);
+      }).catch((_err: unknown) => {
+        /* Workspace metadata fetch failure is non-critical; board already loaded */
       });
     }
 
-    const handleUpdate = (data: any) => {
-      if (data?.workspaceId === id) {
+    const handleUpdate = (data: unknown) => {
+      const payload = data as { workspaceId?: string; type?: string } | null | undefined;
+      if (payload?.workspaceId === id) {
         fetchBoard();
-        if (data?.type === 'MEMBER_UPDATED' || data?.type === 'MEMBER_PURGED') {
+        if (payload?.type === 'MEMBER_UPDATED' || payload?.type === 'MEMBER_PURGED') {
           api.get(`/workspaces/${id}`).then(({ data }) => {
             setActiveWorkspace(data.data);
           }).catch(() => { });
@@ -81,8 +82,8 @@ export default function WorkspacePage() {
     };
 
     socketService.on(SocketEvent.BOARD_UPDATED, handleUpdate);
-    socketService.on(SocketEvent.PRESENCE_UPDATED, (members: any) => {
-      setActiveMinds(members);
+    socketService.on(SocketEvent.PRESENCE_UPDATED, (members: unknown) => {
+      setActiveMinds((members as { userId: string; name: string; socketId: string }[]) || []);
     });
 
     const handleFocus = () => fetchBoard();
@@ -109,8 +110,9 @@ export default function WorkspacePage() {
       setGoal('');
       // Immediate refetch for instant gratification
       await fetchBoard();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'AI Orchestration failed.');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'AI Orchestration failed.';
+      toast.error(errMsg);
     } finally {
       setIsIncepting(false);
     }
@@ -138,8 +140,9 @@ export default function WorkspacePage() {
       setWorkspaces(workspaces.filter(ws => ws.id !== activeWorkspace.id));
       toast.success('Workspace Purged');
       router.push('/workspaces');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error?.message || 'Purge failed. Verify credentials.');
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'Purge failed. Verify credentials.';
+      toast.error(errMsg);
     } finally {
       setIsDeleting(false);
     }

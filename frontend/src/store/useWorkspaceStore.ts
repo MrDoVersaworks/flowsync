@@ -78,7 +78,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         const index = col.tasks.findIndex(t => t.id === taskId);
         if (index !== -1) {
           taskToMove = col.tasks.splice(index, 1)[0];
-          fromColumn = col;
           break;
         }
       }

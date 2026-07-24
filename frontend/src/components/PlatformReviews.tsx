@@ -43,7 +43,7 @@ export function PlatformReviews({ reviews }: { reviews: Review[] }) {
               {'★'.repeat(review.rating)}
             </div>
             <p style={{ color: '#e2e8f0', fontSize: '1rem', fontStyle: 'italic', lineHeight: 1.6 }}>
-              "{review.feedback}"
+              &ldquo;{review.feedback}&rdquo;
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #38bdf8, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>

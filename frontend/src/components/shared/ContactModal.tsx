@@ -84,8 +84,9 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       setGeminiKey('');
       setShowGuide(false);
       onClose();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to dispatch support message. Please try again.');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to dispatch support message. Please try again.';
+      toast.error(errMsg);
     } finally {
       setIsSubmitting(false);
     }

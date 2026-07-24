@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Layout, LogOut, Settings, Plus, ChevronDown, Sparkles, Users, Zap, ShieldCheck } from 'lucide-react';
+import { Layout, LogOut, Settings, ChevronDown, Sparkles, Users, Zap, ShieldCheck } from 'lucide-react';
 import ContactModal from '../shared/ContactModal';
 
 export default function Navbar() {
@@ -16,15 +16,19 @@ export default function Navbar() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const prevPathname = useRef(pathname);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  // Close mobile menu on route change — driven by ref comparison, not effect-only setState
+  if (prevPathname.current !== pathname) {
+    prevPathname.current = pathname;
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }
 
   if (!mounted) return null;
 
