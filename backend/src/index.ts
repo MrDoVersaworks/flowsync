@@ -49,7 +49,7 @@ import contactRoutes from './routes/contact.routes.js';
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
 // ============================================================
-app.use(helmet({
+app.use((helmet as any)({
   contentSecurityPolicy: false, // Let the Next.js frontend handle CSP for rendering
   frameguard: { action: 'deny' }, // Prevent clickjacking
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Strict Transport Security
