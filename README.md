@@ -35,6 +35,18 @@ FlowSync is engineered for specific high-performance cohorts who demand speed, t
 
 ---
 
+## 📸 Interface & User Experience
+
+| Landing Page | Authentication Portal |
+|:---:|:---:|
+| ![Landing Page](./frontend/public/screenshots/landing.png) | ![Login Screen](./frontend/public/screenshots/login.png) |
+
+| Account Registration |
+|:---:|
+| ![Register Screen](./frontend/public/screenshots/register.png) |
+
+---
+
 ## 🧪 Evaluation: The Full Lifecycle Demo
 
 For senior-level evaluation, I have engineered an **Indestructible E2E Showcase** using Playwright. This is not a simple unit test; it is a full-scale demonstration of the platform's stability, real-time synchronization, and AI orchestration depth.
