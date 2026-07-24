@@ -25,3 +25,10 @@ Thumbs.db
 # AI Artifacts
 .agent/
 *.log
+
+# Temporary Media & Recording Exclusions
+videos/
+*.mp4
+*.webm
+recording_walkthrough.md
+

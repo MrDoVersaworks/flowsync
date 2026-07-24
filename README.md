@@ -69,9 +69,6 @@ To witness the platform demonstrate itself across Desktop, Tablet, and Mobile vi
 cd frontend
 npx playwright test tests/e2e/recording.spec.ts --project=chromium --workers=1 --headed
 ```
-*Note: The script is intentionally slowed down (deliberate execution) to allow for visual inspection of real-time transitions and AI logic.*
-
-📖 **[E2E Recording Walkthrough](./frontend/tests/e2e/recording_walkthrough.md):** Read the comprehensive, human-readable breakdown of all 17 stages of the automated demo sequence.
 
 ---
 
