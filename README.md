@@ -9,7 +9,7 @@
 ## 🎯 Why FlowSync?
 In an era of centralized task managers, FlowSync returns control to the engineer.
 - **AI Sovereignty:** A "Bring Your Own Key" (BYOK) architecture ensures that you own your intelligence costs and data privacy.
-- **High-Performance Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for responsive feedback.
+- **High-Performance Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for responsive feedback (supports native Socket.io on dedicated hosts or Pusher Channels on Vercel Serverless).
 - **Elite Performance:** Built with a Tailwind-native architecture, optimized for high-performance and Lighthouse excellence.
 
 ## 👥 Targeted Population
