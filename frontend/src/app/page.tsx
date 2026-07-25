@@ -31,11 +31,6 @@ export default function Home() {
     { icon: Cpu, color: 'text-accent-cyan', title: 'Sovereign Vault', desc: 'Secure technical sanctuary with AES-256 local encryption standards.' }
   ];
 
-  const mockReviews: Review[] = [
-    { id: '1', name: 'David Kim', rating: 5, profession: 'Product Manager', feedback: 'FlowSync bridged the gap between our abstract goals and concrete technical tasks. The real-time socket sync is flawless.' },
-    { id: '2', name: 'Aisha Patel', rating: 5, profession: 'Engineering Lead', feedback: 'We ditched Jira for FlowSync. The AI decomposition feature alone saves us 10+ hours per sprint in planning.' },
-    { id: '3', name: 'James Wilson', rating: 5, profession: 'Full-Stack Developer', feedback: 'Finally, a project management tool that speaks engineer. 100% type-safe, absolutely zero fluff.' }
-  ];
 
   return (
     <div ref={containerRef} className="min-h-[200vh] bg-background text-foreground overflow-x-hidden relative selection:bg-accent-blue/30">

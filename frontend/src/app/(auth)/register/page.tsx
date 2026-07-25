@@ -11,12 +11,19 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!termsAgreed) {
+      toast.error('You must agree to the Terms of Service and Privacy Policy to proceed.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -104,10 +111,58 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Terms & Conditions Agreement Section */}
+          <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+            <div className="flex items-start gap-3">
+              <input
+                id="terms-checkbox"
+                type="checkbox"
+                checked={termsAgreed}
+                onChange={(e) => setTermsAgreed(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-white/20 text-accent-blue focus:ring-accent-blue bg-black/40 cursor-pointer"
+              />
+              <label htmlFor="terms-checkbox" className="text-xs text-text-dim leading-relaxed cursor-pointer select-none">
+                I have read and agree to the{' '}
+                <Link href="/terms" target="_blank" className="text-accent-blue underline hover:text-accent-cyan font-medium">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" target="_blank" className="text-accent-blue underline hover:text-accent-cyan font-medium">
+                  Privacy Policy
+                </Link>.
+              </label>
+            </div>
+            
+            <div className="flex gap-2 pt-1 border-t border-white/5 text-[11px]">
+              <button
+                type="button"
+                onClick={() => setTermsAgreed(true)}
+                className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition-all ${
+                  termsAgreed
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-white/5 text-text-dim hover:bg-white/10'
+                }`}
+              >
+                {termsAgreed ? '✓ Terms Agreed' : 'I Agree'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTermsAgreed(false)}
+                className={`flex-1 py-1.5 px-2 rounded-lg font-semibold transition-all ${
+                  !termsAgreed
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    : 'bg-white/5 text-text-dim hover:bg-white/10'
+                }`}
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
-            className="btn-primary"
+            disabled={loading || !termsAgreed}
+            className={`btn-primary ${!termsAgreed ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
