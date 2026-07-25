@@ -182,7 +182,7 @@ export default function Home() {
       <UnifiedFooter 
         platformName="FlowSync Real-Time Task Orchestration" 
         techStack="Next.js & Express"
-        contactLink="https://devpulse.tech"
+        contactLink="https://devpulse-igt5.vercel.app"
       />
     </div>
   );
