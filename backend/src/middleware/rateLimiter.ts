@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import { rateLimit } from 'express-rate-limit';
 import { ErrorCode } from '../constants.js';
 
 export const authRateLimiter = rateLimit({
