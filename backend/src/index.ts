@@ -54,11 +54,18 @@ app.use((helmet as any)({
   frameguard: { action: 'deny' }, // Prevent clickjacking
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Strict Transport Security
 }));
+let corsOrigin: string | string[];
+if (config.allowedOrigin.includes(',')) {
+  corsOrigin = config.allowedOrigin.split(',').map((origin) => origin.trim().replace(/\/+$/, ''));
+} else {
+  corsOrigin = config.allowedOrigin.trim().replace(/\/+$/, '');
+}
+
 app.use(cors({
-  origin: config.allowedOrigin.includes(',')
-    ? config.allowedOrigin.split(',').map(o => o.trim())
-    : config.allowedOrigin,
+  origin: corsOrigin,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // ============================================================
@@ -200,3 +207,5 @@ server.listen(PORT, () => {
   logger.info('SERVER', `FlowSync Infrastructure active on port ${PORT}`);
   logger.info('SERVER', `Environment: ${config.nodeEnv}`);
 });
+
+export default app;
