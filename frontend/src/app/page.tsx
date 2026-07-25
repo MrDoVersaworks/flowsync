@@ -176,13 +176,13 @@ export default function Home() {
       </section>
 
       <div style={{ position: 'relative', zIndex: 10, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
-        <PlatformReviews reviews={mockReviews} />
+        <PlatformReviews />
       </div>
 
       <UnifiedFooter 
         platformName="FlowSync Real-Time Task Orchestration" 
         techStack="Next.js & Express"
-        contactLink="https://devpulse-igt5.vercel.app"
+        contactLink="https://devpulse-zeta-six.vercel.app/"
       />
     </div>
   );
