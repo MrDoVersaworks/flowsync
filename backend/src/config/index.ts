@@ -5,14 +5,16 @@ dotenv.config();
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
-  AES_KEY: z.string().length(64, 'AES_KEY must be exactly 64 hex characters (32 bytes)'),
+  AES_KEY: z.string().min(1, 'AES_KEY is required'),
   PORT: z.string().default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ALLOWED_ORIGIN: z.string().default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().optional(),
   PUSHER_APP_ID: z.string().optional(),
   PUSHER_KEY: z.string().optional(),
   PUSHER_SECRET: z.string().optional(),
   PUSHER_CLUSTER: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -45,7 +47,7 @@ export const config = {
   jwtSecret: env.JWT_SECRET,
   aesKey: env.AES_KEY,
   nodeEnv: env.NODE_ENV,
-  allowedOrigin: env.ALLOWED_ORIGIN,
+  allowedOrigin: env.CORS_ORIGIN || env.ALLOWED_ORIGIN,
   pusherAppId: env.PUSHER_APP_ID,
   pusherKey: env.PUSHER_KEY,
   pusherSecret: env.PUSHER_SECRET,
