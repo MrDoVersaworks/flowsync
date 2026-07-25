@@ -6,7 +6,7 @@ import { ArrowRight, Sparkles, Zap, Boxes, ShieldCheck, Globe, Cpu, Share2, Tren
 import Link from 'next/link';
 import { useRef } from 'react';
 import NeuralNetwork from '@/components/layout/NeuralNetwork';
-import { PlatformReviews, Review } from '@/components/PlatformReviews';
+
 import { UnifiedFooter } from '@/components/UnifiedFooter';
 
 export default function Home() {
@@ -175,9 +175,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <div style={{ position: 'relative', zIndex: 10, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
-        <PlatformReviews />
-      </div>
+
 
       <UnifiedFooter 
         platformName="FlowSync Real-Time Task Orchestration" 
