@@ -72,10 +72,10 @@ app.use(cookieParser());
 // HEALTH CHECK
 // ============================================================
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    service: 'flowsync-backend', 
-    timestamp: new Date().toISOString() 
+  res.status(200).json({
+    status: 'ok',
+    service: 'flowsync-backend',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -120,7 +120,7 @@ io.on('connection', (socket) => {
   socket.on(SocketEvent.JOIN_WORKSPACE, (data: { workspaceId: string, user: { id: string, name: string } }) => {
     const { workspaceId, user } = data;
     socket.join(workspaceId);
-    
+
     // Store user info in socket data for cleanup
     (socket as any).userId = user.id;
     (socket as any).workspaceId = workspaceId;
@@ -145,7 +145,7 @@ io.on('connection', (socket) => {
       Array.from(activeMinds.get(workspaceId)!).map(m => [m.userId, m])
     ).values());
     io.to(workspaceId).emit(SocketEvent.PRESENCE_UPDATED, members);
-    
+
     logger.info('SOCKET', `User ${user.name} synchronized with workspace: ${workspaceId}`);
   });
 
@@ -180,7 +180,7 @@ io.on('connection', (socket) => {
           break;
         }
       }
-      
+
       // Broadcast updated presence (Deduplicate by userId)
       const members = Array.from(new Map(
         Array.from(minds).map(m => [m.userId, m])
