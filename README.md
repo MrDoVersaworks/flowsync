@@ -1,7 +1,8 @@
 # FlowSync — Sovereign Real-Time Kanban Orchestration <!-- CI_TRIGGER_INIT -->
 
 [![FlowSync CI/CD](https://github.com/MrDoVersaworks/flowsync/actions/workflows/main.yml/badge.svg)](https://github.com/MrDoVersaworks/flowsync/actions)
-[![Socket.io](https://img.shields.io/badge/RealTime-Socket.io-black)](https://socket.io/)
+[![Playwright E2E](https://img.shields.io/badge/QA-Playwright-green)](https://playwright.dev/)
+[![Hybrid Real-Time](https://img.shields.io/badge/RealTime-Socket.io%20%2B%20Pusher-black)](https://socket.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **FlowSync** is a production-grade, collaborative task management platform engineered for **Absolute AI Sovereignty**. It leverages a high-performance WebSocket nerve system to provide near-real-time synchronization across teams, while ensuring that every AI interaction is powered by the user's own encrypted credentials.
@@ -9,7 +10,7 @@
 ## 🎯 Why FlowSync?
 In an era of centralized task managers, FlowSync returns control to the engineer.
 - **AI Sovereignty:** A "Bring Your Own Key" (BYOK) architecture ensures that you own your intelligence costs and data privacy.
-- **High-Performance Collaboration:** Engineered with optimistic UI updates and room-based WebSocket orchestration for responsive feedback (supports native Socket.io on dedicated hosts or Pusher Channels on Vercel Serverless).
+- **High-Performance Collaboration:** Engineered with optimistic UI updates and a **Hybrid Real-Time Engine** — native Socket.io on dedicated hosts for maximum throughput, seamlessly falling back to Pusher Channels on Vercel Serverless for zero-downtime cloud deployment.
 - **Elite Performance:** Built with a Tailwind-native architecture, optimized for high-performance and Lighthouse excellence.
 
 ## 👥 Targeted Population
@@ -27,7 +28,7 @@ FlowSync is engineered for specific high-performance cohorts who demand speed, t
 - **Full-Field Manual Inception:** Manually incept tasks with a title, technical description, and priority — all fields are persisted to the database on creation.
 - **Collaborative Reconciliation:** Task-anchored chat feed for real-time technical discussion and decision persistence, with a Purge Feed cleanup gate.
 - **Intelligent Notifications:** Reactive unread tracking engine with global dashboard alerts and mobile-optimized beacons.
-- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted in near-real-time via Socket.io.
+- **Real-Time Board Sync:** Every card move, column creation, and task update is broadcasted in near-real-time via the Hybrid Nerve System (Socket.io on dedicated hosts, Pusher Channels on serverless cloud).
 - **Atomic Permissions:** Granular Role-Based Access Control (RBAC) ensuring technical authority is strictly managed (Owner, Contributor, Viewer).
 - **AES-256 Secure Vault:** Your API keys are encrypted at rest and only decrypted in volatile memory during generation sessions.
 - **Multi-Layer Deletion:** Destroy task comments (Purge Feed), individual tasks (modal or quick-trash), and entire columns — each action protected by a confirmation gate.
@@ -129,7 +130,7 @@ FlowSync implements a "Vault-First" security model to protect user data and AI c
 ### Backend Infrastructure (The Citadel)
 - **Runtime**: Node.js 20+ & Express (ESM Architecture).
 - **Data Layer**: Drizzle ORM with Neon Serverless PostgreSQL (16+).
-- **Orchestration**: Socket.io (Room-based Room Isolation).
+- **Orchestration**: Hybrid Real-Time Engine — Socket.io (Room-based isolation on dedicated hosts) + Pusher Channels (serverless cloud fallback).
 - **Resilience**: Global Error Handler & Centralized Constant Registry.
 
 ---

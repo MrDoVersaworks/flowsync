@@ -25,7 +25,7 @@ export default function Home() {
   const features = [
     { icon: TrendingUp, color: 'text-accent-blue', title: 'Accelerated Velocity ROI', desc: 'Accelerate sprint delivery by instantly converting high-level goals into actionable technical blueprints.' },
     { icon: Code2, color: 'text-accent-purple', title: '100% Type-Safe', desc: 'Engineered with absolute strictness. Zero runtime errors, deterministic state, and Lighthouse-optimized.' },
-    { icon: Zap, color: 'text-accent-cyan', title: 'Nerve System', desc: 'Production-grade Socket.io convergence for high-performance, real-time sync.' },
+    { icon: Zap, color: 'text-accent-cyan', title: 'Hybrid Nerve System', desc: 'Adaptive real-time engine: native Socket.io on dedicated hosts, Pusher Channels on Vercel Serverless — zero-downtime sync everywhere.' },
     { icon: ShieldCheck, color: 'text-accent-blue', title: 'Atomic Permissions', desc: 'Granular Role-Based Access Control: Owners, Contributors, and Viewers.' },
     { icon: Sparkles, color: 'text-accent-purple', title: 'Sovereign AI', desc: 'Atomic goal decomposition via Gemini AI orchestration (BYOK architecture).' },
     { icon: Cpu, color: 'text-accent-cyan', title: 'Sovereign Vault', desc: 'Secure technical sanctuary with AES-256 local encryption standards.' }
@@ -157,7 +157,7 @@ export default function Home() {
         >
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex gap-12">
-               {['Atomic Inception', 'Socket Alignment', 'AES-256 Vaulting', 'Sovereign BYOK', 'Quantum Convergence', 'Technical Grounding'].map((text, idx) => (
+               {['Atomic Inception', 'Hybrid Sync', 'AES-256 Vaulting', 'Sovereign BYOK', 'Quantum Convergence', 'Technical Grounding'].map((text, idx) => (
                  <div key={idx} className="flex items-center gap-6">
                    <span className="text-5xl md:text-9xl font-black text-foreground/5 hover:text-accent-blue/20 transition-smooth cursor-default font-display uppercase italic">
                      {text}
