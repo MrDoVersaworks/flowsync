@@ -10,7 +10,7 @@ import { AITask } from '../types/ai.types.js';
 
 import { tasks, columns } from '../db/schema.js';
 import { io } from '../index.js';
-import { getBoard, createColumn } from './kanban.service.js';
+import { getBoard, createColumn, verifyColumnInWorkspace } from './kanban.service.js';
 
 export async function breakdownGoal(userId: string, workspaceId: string, goal: string, targetColumnId?: string): Promise<AITask[]> {
   // 1. Get user configuration
@@ -83,6 +83,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     let columnId: string;
 
     if (targetColumnId) {
+      await verifyColumnInWorkspace(workspaceId, targetColumnId);
       columnId = targetColumnId;
     } else {
       const suggestedTitle = parsed.suggested_column_title || 'New Goal Expansion';

@@ -4,7 +4,7 @@ import { ErrorCode } from '../constants.js';
 
 export const validate = (schema: z.ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
   try {
-    schema.parse(req.body);
+    req.body = schema.parse(req.body);
     next();
   } catch (error: unknown) {
     let message = 'Invalid request data';

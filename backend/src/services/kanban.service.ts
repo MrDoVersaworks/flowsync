@@ -19,6 +19,25 @@ async function verifyMembership(userId: string, workspaceId: string) {
   }
 }
 
+export async function verifyColumnInWorkspace(
+  workspaceId: string,
+  columnId: string
+): Promise<void> {
+  const matchingColumn = await db
+    .select({ id: columns.id })
+    .from(columns)
+    .where(and(eq(columns.id, columnId), eq(columns.workspace_id, workspaceId)))
+    .limit(1);
+
+  if (matchingColumn.length === 0) {
+    throw {
+      status: 404,
+      code: ErrorCode.DB_NOT_FOUND,
+      message: 'Column not found in this workspace',
+    };
+  }
+}
+
 export async function getBoard(userId: string, workspaceId: string): Promise<KanbanBoardResponse> {
   await verifyMembership(userId, workspaceId);
 
@@ -132,6 +151,7 @@ export async function createColumn(userId: string, workspaceId: string, title: s
 
 export async function createTask(userId: string, workspaceId: string, columnId: string, title: string, description?: string, priority?: string): Promise<TaskResponse> {
   await verifyMembership(userId, workspaceId);
+  await verifyColumnInWorkspace(workspaceId, columnId);
 
   const maxPosResult = await db
     .select({ maxPos: max(tasks.position) })
@@ -194,18 +214,47 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
 export async function moveTask(userId: string, workspaceId: string, input: TaskMoveInput): Promise<void> {
   await verifyMembership(userId, workspaceId);
   const { taskId, fromColumnId, toColumnId, newPosition } = input;
+  await Promise.all([
+    verifyColumnInWorkspace(workspaceId, fromColumnId),
+    verifyColumnInWorkspace(workspaceId, toColumnId),
+  ]);
+
+  const currentTask = await db
+    .select({ id: tasks.id, columnId: tasks.column_id })
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
+    .limit(1);
+
+  if (currentTask.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+  }
+  if (currentTask[0].columnId !== fromColumnId) {
+    throw {
+      status: 409,
+      code: ErrorCode.VALIDATION_ERROR,
+      message: 'Task does not belong to the supplied source column',
+    };
+  }
 
   if (fromColumnId === toColumnId) {
     await db.transaction(async (tx) => {
-      await tx.update(tasks)
+      const updated = await tx.update(tasks)
         .set({ position: newPosition })
-        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)));
+        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
+        .returning({ id: tasks.id });
+      if (updated.length === 0) {
+        throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+      }
     });
   } else {
     await db.transaction(async (tx) => {
-      await tx.update(tasks)
+      const updated = await tx.update(tasks)
         .set({ column_id: toColumnId, position: newPosition })
-        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)));
+        .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
+        .returning({ id: tasks.id });
+      if (updated.length === 0) {
+        throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+      }
     });
   }
 

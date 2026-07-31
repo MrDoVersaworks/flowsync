@@ -99,6 +99,7 @@ app.use('/api/ai', timeout('60s'), haltOnTimeout, generalRateLimiter, aiRateLimi
 app.use('/api/comments', timeout('15s'), haltOnTimeout, generalRateLimiter, authMiddleware, commentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/public', publicRoutes);
 
 // ============================================================
 // 404 HANDLER

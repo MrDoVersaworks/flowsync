@@ -15,6 +15,7 @@ const envSchema = z.object({
   PUSHER_SECRET: z.string().optional(),
   PUSHER_CLUSTER: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  ADMIN_EMAIL: z.string().email().optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -52,4 +53,5 @@ export const config = {
   pusherKey: env.PUSHER_KEY,
   pusherSecret: env.PUSHER_SECRET,
   pusherCluster: env.PUSHER_CLUSTER,
+  adminEmail: env.ADMIN_EMAIL,
 };

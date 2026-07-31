@@ -123,6 +123,33 @@ export async function purgeTaskComments(userId: string, taskId: string) {
 }
 
 export async function markTaskAsRead(userId: string, taskId: string) {
+  const taskResult = await db
+    .select({ workspaceId: tasks.workspace_id })
+    .from(tasks)
+    .where(eq(tasks.id, taskId))
+    .limit(1);
+  if (taskResult.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+  }
+
+  const membership = await db
+    .select({ userId: workspaceMembers.user_id })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.user_id, userId),
+        eq(workspaceMembers.workspace_id, taskResult[0].workspaceId)
+      )
+    )
+    .limit(1);
+  if (membership.length === 0) {
+    throw {
+      status: 403,
+      code: ErrorCode.AUTH_UNAUTHORIZED,
+      message: 'Not a member of this workspace',
+    };
+  }
+
   const now = new Date();
   await db.insert(taskReads).values({
     user_id: userId,
