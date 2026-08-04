@@ -5,7 +5,7 @@
 [![Hybrid Real-Time](https://img.shields.io/badge/RealTime-Socket.io%20%2B%20Pusher-black)](https://socket.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**FlowSync** is a production-grade, collaborative task management platform engineered for **Absolute AI Sovereignty**. It leverages a high-performance WebSocket nerve system to provide near-real-time synchronization across teams, while ensuring that every AI interaction is powered by the user's own encrypted credentials.
+**FlowSync** is a collaborative task management platform currently **under active development**, engineered for **Absolute AI Sovereignty**. It leverages a high-performance WebSocket nerve system to provide near-real-time synchronization across teams, while ensuring that every AI interaction is powered by the user's own encrypted credentials.
 
 ## 🎯 Why FlowSync?
 In an era of centralized task managers, FlowSync returns control to the engineer.
