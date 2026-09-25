@@ -80,15 +80,27 @@ export default function LoginPage() {
             <label htmlFor="login-password" className="block text-sm font-medium text-text-dim mb-2 uppercase tracking-wider">
               Password
             </label>
-            <input
-              id="login-password"
-              type="password"
-              className="auth-input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                className="auth-input pr-12"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-text-dim transition-colors hover:text-foreground focus:outline-none focus-visible:text-accent-blue"
+              >
+                <EyeIcon hidden={!showPassword} />
+              </button>
+            </div>
           </div>
 
           <button
