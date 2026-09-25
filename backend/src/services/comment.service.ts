@@ -1,8 +1,9 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { taskComments, tasks, users, workspaceMembers, workspaces, taskReads } from '../db/schema.js';
+import { taskComments, tasks, users, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { io } from '../index.js';
+import { requireWorkspaceMember, requireWorkspaceMutation, requireWorkspaceAdmin } from './authorization.service.js';
 
 export async function listTaskComments(userId: string, taskId: string) {
   // Verify access via task's workspace
@@ -11,15 +12,7 @@ export async function listTaskComments(userId: string, taskId: string) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  const membership = await db
-    .select()
-    .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.user_id, userId), eq(workspaceMembers.workspace_id, taskResult[0].workspace_id)))
-    .limit(1);
-
-  if (membership.length === 0) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Not a member of this workspace' };
-  }
+  await requireWorkspaceMember(userId, taskResult[0].workspace_id);
 
   const comments = await db
     .select({
@@ -84,8 +77,9 @@ export async function deleteComment(userId: string, commentId: string) {
   const task = await db.select().from(tasks).where(eq(tasks.id, comment[0].task_id)).limit(1);
   const workspace = await db.select().from(workspaces).where(eq(workspaces.id, task[0].workspace_id)).limit(1);
 
-  // Author or Workspace Owner can delete
-  if (comment[0].user_id !== userId && workspace[0].owner_id !== userId) {
+  const authorization = await requireWorkspaceMember(userId, task[0].workspace_id);
+  // Authors, administrators, and owners may delete; viewers are read-only.
+  if (comment[0].user_id !== userId && !['owner', 'admin'].includes(authorization.role)) {
     throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the author or sanctuary owner can purge this note.' };
   }
 
@@ -107,8 +101,7 @@ export async function purgeTaskComments(userId: string, taskId: string) {
 
   const workspace = await db.select().from(workspaces).where(eq(workspaces.id, task[0].workspace_id)).limit(1);
 
-  // Only Workspace Owner can purge entire feed
-  if (workspace[0].owner_id !== userId) {
+  await requireWorkspaceAdmin(userId, task[0].workspace_id);
     throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the sanctuary owner can wipe the technical reconciliation feed.' };
   }
 
@@ -132,23 +125,7 @@ export async function markTaskAsRead(userId: string, taskId: string) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  const membership = await db
-    .select({ userId: workspaceMembers.user_id })
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.user_id, userId),
-        eq(workspaceMembers.workspace_id, taskResult[0].workspaceId)
-      )
-    )
-    .limit(1);
-  if (membership.length === 0) {
-    throw {
-      status: 403,
-      code: ErrorCode.AUTH_UNAUTHORIZED,
-      message: 'Not a member of this workspace',
-    };
-  }
+  await requireWorkspaceMember(userId, taskResult[0].workspaceId);
 
   const now = new Date();
   await db.insert(taskReads).values({
