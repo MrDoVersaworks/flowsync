@@ -14,6 +14,14 @@ test.describe('FlowSync — Public & User Features', () => {
     await page.goto(`${FRONTEND_URL}/login`);
     await expect(page.locator('#login-email')).toBeVisible();
     await expect(page.locator('#login-password')).toBeVisible();
+    const toggle = page.getByRole('button', { name: 'Show password' });
+    await expect(toggle).toBeVisible();
+    await page.locator('#login-password').fill('test-password');
+    await toggle.click();
+    await expect(page.locator('#login-password')).toHaveAttribute('type', 'text');
+    await expect(page.getByRole('button', { name: 'Hide password' })).toBeVisible();
+    await page.getByRole('button', { name: 'Hide password' }).click();
+    await expect(page.locator('#login-password')).toHaveAttribute('type', 'password');
   });
 
   test('register page renders with ID elements', async ({ page }) => {
@@ -21,17 +29,27 @@ test.describe('FlowSync — Public & User Features', () => {
     await expect(page.locator('#full-name')).toBeVisible();
     await expect(page.locator('#email-address')).toBeVisible();
     await expect(page.locator('#password')).toBeVisible();
+    const toggle = page.getByRole('button', { name: 'Show password' });
+    await expect(toggle).toBeVisible();
+    await page.locator('#password').fill('test-password');
+    await toggle.click();
+    await expect(page.locator('#password')).toHaveAttribute('type', 'text');
+    await expect(page.getByRole('button', { name: 'Hide password' })).toBeVisible();
     await expect(page.locator('#terms-checkbox')).toBeVisible();
   });
 
   test('privacy policy page renders', async ({ page }) => {
     await page.goto(`${FRONTEND_URL}/privacy`);
     await expect(page.locator('body')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+    await expect(page.getByText('Information we collect')).toBeVisible();
   });
 
   test('terms of service page renders', async ({ page }) => {
     await page.goto(`${FRONTEND_URL}/terms`);
     await expect(page.locator('body')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Terms of Service' })).toBeVisible();
+    await expect(page.getByText('Using FlowSync')).toBeVisible();
   });
 
   /* ---- Public Backend API Checks ---- */
