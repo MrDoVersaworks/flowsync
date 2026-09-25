@@ -50,7 +50,7 @@ export function getRefreshCookieOptions() {
   return {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
-    sameSite: (config.nodeEnv === 'production' ? 'none' : 'lax') as const,
+    sameSite: config.nodeEnv === 'production' ? ('none' as const) : ('lax' as const),
     path: '/api/auth',
     maxAge: REFRESH_TTL_MS,
   };
