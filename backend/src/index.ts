@@ -46,6 +46,7 @@ import aiRoutes from './routes/ai.routes.js';
 import commentRoutes from './routes/comment.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import contactRoutes from './routes/contact.routes.js';
+import realtimeRoutes from './routes/realtime.routes.js';
 
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
@@ -102,6 +103,7 @@ app.use('/api/settings', timeout('15s'), haltOnTimeout, generalRateLimiter, auth
 app.use('/api/ai', timeout('60s'), haltOnTimeout, generalRateLimiter, aiRateLimiter, authMiddleware, aiRoutes);
 app.use('/api/comments', timeout('15s'), haltOnTimeout, generalRateLimiter, authMiddleware, commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/realtime', realtimeRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/public', publicRoutes);
 
