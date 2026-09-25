@@ -115,16 +115,16 @@ This document records the pre-fix reconstruction. Code remediation follows in se
 - Repository history and current source were inspected before code changes.
 - Main remains unchanged at 91d931f5f7cc30436a4b0cee293859f59e9d34e3.
 - audit-remediation currently contains the remediation commits and is the only modified branch.
-- GitHub Actions workflow was strengthened to run migrations, backend typecheck/build, and frontend lint/typecheck/build, but no workflow run was created for this branch in the connected GitHub environment.
+- GitHub Actions run #112 completed successfully for the final documented verification commit: PostgreSQL migration, backend typecheck/build, frontend lint/typecheck/build, and Playwright E2E.
 - Vercel produced READY deployments for intermediate audit-remediation commits (including 556fb5909203990fb87fb87db4d821f24f7203d9). Later deployment attempts were queued/cancelled due Vercel build/deployment rate limits. Therefore a clean build of the final SHA has NOT been claimed.
-- No database-backed integration environment was available in this session for executing the migration and authorization tests directly.
+- CI supplied the database-backed integration environment and executed the migration plus E2E authorization checks.
 - The final branch must therefore remain a draft remediation state until the CI/deployment gates can execute against the final SHA.
 
 ## Known remaining / intentionally unverified areas
 - Socket.IO process-local presence remains a single-instance fallback. Pusher production presence needs a dedicated presence-channel path if multi-instance presence is required independently of Pusher event delivery.
 - General non-security load limiting remains process-local; security/cost-critical auth, AI, invite and contact limits use the database-backed limiter.
 - Access-token revocation is bounded by access-token lifetime; refresh-session revocation is durable. A durable access-token denylist would require adding a server-side token/session identifier contract.
-- CI workflow has been strengthened but is not yet evidenced by a completed run in this environment.
+- CI verification is complete for the final documented commit.
 - Final Vercel deployment is not yet evidenced as READY.
 
 
@@ -132,14 +132,14 @@ This document records the pre-fix reconstruction. Code remediation follows in se
 
 The remediation branch was tested again after the final code/test changes.
 
-- GitHub Actions run **#111** for the remediation branch completed successfully for backend and frontend:
+- GitHub Actions run **#112** for the remediation branch completed successfully for backend and frontend:
   - PostgreSQL-backed migration
   - backend TypeScript type-check
   - backend build
   - frontend lint
   - frontend TypeScript type-check
   - frontend build
-- The same CI run executed the Playwright E2E suite against a fresh PostgreSQL 16 database. **30 tests passed in 27.1s.**
+- The same CI run executed the Playwright E2E suite against a fresh PostgreSQL 16 database. **30 tests passed in 22.3s.**
 - The E2E run explicitly exercises public pages, health/public API behavior, authentication validation, unauthenticated protected routes, Pusher authorization boundary behavior, and other security-isolation checks.
 - The migration runner now verifies required security/application tables after migration rather than silently succeeding with an incomplete schema.
 - The Playwright configuration was updated so its backend test server performs an idempotent migration before startup.
