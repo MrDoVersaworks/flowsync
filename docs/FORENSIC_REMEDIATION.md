@@ -126,3 +126,32 @@ This document records the pre-fix reconstruction. Code remediation follows in se
 - Access-token revocation is bounded by access-token lifetime; refresh-session revocation is durable. A durable access-token denylist would require adding a server-side token/session identifier contract.
 - CI workflow has been strengthened but is not yet evidenced by a completed run in this environment.
 - Final Vercel deployment is not yet evidenced as READY.
+
+
+## Final verification pass — 2026-09-25
+
+The remediation branch was tested again after the final code/test changes.
+
+- GitHub Actions run **#111** for the remediation branch completed successfully for backend and frontend:
+  - PostgreSQL-backed migration
+  - backend TypeScript type-check
+  - backend build
+  - frontend lint
+  - frontend TypeScript type-check
+  - frontend build
+- The same CI run executed the Playwright E2E suite against a fresh PostgreSQL 16 database. **30 tests passed in 27.1s.**
+- The E2E run explicitly exercises public pages, health/public API behavior, authentication validation, unauthenticated protected routes, Pusher authorization boundary behavior, and other security-isolation checks.
+- The migration runner now verifies required security/application tables after migration rather than silently succeeding with an incomplete schema.
+- The Playwright configuration was updated so its backend test server performs an idempotent migration before startup.
+- Pusher remains the production realtime mechanism. `backend/src/routes/realtime.routes.ts` still exposes authenticated private workspace-channel authorization and enforces workspace membership before signing a channel.
+- Socket.IO remains present in the backend as a separate realtime mechanism; it was not substituted for Pusher or removed.
+- The final Vercel preview visible during this verification was a READY deployment for `audit-remediation` at an earlier remediation SHA. Vercel had not yet exposed a READY deployment for the final verification SHA when this record was written. Therefore this CI result proves the source/build/E2E state, but it does not claim a final-commit Vercel runtime deployment.
+- The `main` branch was not modified by the remediation work before the merge decision.
+
+### Final proof model
+
+For each remediation area, acceptance required both:
+1. the documented audit/security behavior is enforced; and
+2. the original functional path remains represented by build, integration, or E2E coverage.
+
+This record intentionally does not claim that every possible production scenario has been exhaustively simulated. It records the strongest automated evidence available in the repository/CI environment and keeps deployment-specific verification distinct from source-level verification.
