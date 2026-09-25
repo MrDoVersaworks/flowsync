@@ -50,3 +50,10 @@ BEGIN
     ALTER TABLE platform_reviews ADD CONSTRAINT platform_reviews_rating_check CHECK (rating BETWEEN 1 AND 5);
   END IF;
 END $$;
+
+CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+  bucket_key varchar(255) NOT NULL,
+  window_start timestamptz NOT NULL,
+  count integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (bucket_key, window_start)
+);
