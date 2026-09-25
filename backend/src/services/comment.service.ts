@@ -1,12 +1,11 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { taskComments, tasks, users, taskReads } from '../db/schema.js';
+import { taskComments, tasks, users, workspaceMembers, workspaces, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { io } from '../index.js';
-import { requireWorkspaceMember, requireWorkspaceMutation, requireWorkspaceAdmin } from './authorization.service.js';
+import { requireWorkspaceMember, requireWorkspaceAdmin } from './authorization.service.js';
 
 export async function listTaskComments(userId: string, taskId: string) {
-  // Verify access via task's workspace
   const taskResult = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
   if (taskResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
@@ -14,7 +13,7 @@ export async function listTaskComments(userId: string, taskId: string) {
 
   await requireWorkspaceMember(userId, taskResult[0].workspace_id);
 
-  const comments = await db
+  return db
     .select({
       id: taskComments.id,
       content: taskComments.content,
@@ -28,26 +27,15 @@ export async function listTaskComments(userId: string, taskId: string) {
     .innerJoin(users, eq(taskComments.user_id, users.id))
     .where(eq(taskComments.task_id, taskId))
     .orderBy(desc(taskComments.created_at));
-
-  return comments;
 }
 
 export async function createComment(userId: string, taskId: string, content: string) {
-  // Verify access
   const taskResult = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
   if (taskResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  const membership = await db
-    .select()
-    .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.user_id, userId), eq(workspaceMembers.workspace_id, taskResult[0].workspace_id)))
-    .limit(1);
-
-  if (membership.length === 0) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Not a member of this workspace' };
-  }
+  await requireWorkspaceMember(userId, taskResult[0].workspace_id);
 
   const inserted = await db.insert(taskComments).values({
     task_id: taskId,
@@ -55,14 +43,12 @@ export async function createComment(userId: string, taskId: string, content: str
     content,
   }).returning();
 
-  // RULE ALIGNMENT: Mark task as read for the sender immediately
   await markTaskAsRead(userId, taskId);
 
-  // Real-Time Broadcast for unread counts
-  io.to(taskResult[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
-    type: 'COMMENT_ADDED', 
+  io.to(taskResult[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, {
+    type: 'COMMENT_ADDED',
     workspaceId: taskResult[0].workspace_id,
-    taskId 
+    taskId
   });
 
   return inserted[0];
@@ -75,21 +61,26 @@ export async function deleteComment(userId: string, commentId: string) {
   }
 
   const task = await db.select().from(tasks).where(eq(tasks.id, comment[0].task_id)).limit(1);
+  if (task.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
+  }
+
   const workspace = await db.select().from(workspaces).where(eq(workspaces.id, task[0].workspace_id)).limit(1);
+  if (workspace.length === 0) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
+  }
 
   const authorization = await requireWorkspaceMember(userId, task[0].workspace_id);
-  // Authors, administrators, and owners may delete; viewers are read-only.
   if (comment[0].user_id !== userId && !['owner', 'admin'].includes(authorization.role)) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the author or sanctuary owner can purge this note.' };
+    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the author or workspace administrator can delete this comment.' };
   }
 
   await db.delete(taskComments).where(eq(taskComments.id, commentId));
 
-  // Real-Time Broadcast
-  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
-    type: 'COMMENT_DELETED', 
+  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, {
+    type: 'COMMENT_DELETED',
     workspaceId: task[0].workspace_id,
-    taskId: task[0].id 
+    taskId: task[0].id
   });
 }
 
@@ -99,19 +90,13 @@ export async function purgeTaskComments(userId: string, taskId: string) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
 
-  const workspace = await db.select().from(workspaces).where(eq(workspaces.id, task[0].workspace_id)).limit(1);
-
   await requireWorkspaceAdmin(userId, task[0].workspace_id);
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Only the sanctuary owner can wipe the technical reconciliation feed.' };
-  }
-
   await db.delete(taskComments).where(eq(taskComments.task_id, taskId));
 
-  // Real-Time Broadcast
-  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, { 
-    type: 'COMMENTS_PURGED', 
+  io.to(task[0].workspace_id).emit(SocketEvent.BOARD_UPDATED, {
+    type: 'COMMENTS_PURGED',
     workspaceId: task[0].workspace_id,
-    taskId 
+    taskId
   });
 }
 
@@ -121,6 +106,7 @@ export async function markTaskAsRead(userId: string, taskId: string) {
     .from(tasks)
     .where(eq(tasks.id, taskId))
     .limit(1);
+
   if (taskResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Task not found' };
   }
