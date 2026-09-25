@@ -37,7 +37,7 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
     transition,
     isDragging
   } = useSortable({
-    id: task.id,
+    id: task?.id ?? 'invalid-task',
     data: {
       type: 'Task',
       task
