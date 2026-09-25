@@ -51,7 +51,7 @@ test.describe('FlowSync — Public & User Features', () => {
   });
 
   test('POST /public/reviews submits user review', async ({ request }) => {
-    const res = await request.post(`${BACKEND_URL}/api/admin/reviews`, {
+    const res = await request.post(`${BACKEND_URL}/api/public/reviews`, {
       data: {
         name: 'Project Lead',
         rating: 5,
