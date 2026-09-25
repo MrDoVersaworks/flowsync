@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then npm run migrate:vercel; fi && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:vercel": "cd ../backend && npm ci --ignore-scripts && npm run migrate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

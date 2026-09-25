@@ -15,6 +15,9 @@ async function runMigrations(): Promise<void> {
   const migrationsDir = path.resolve(process.cwd(), 'drizzle');
 
   try {
+    // Serialize production/preview migration attempts so concurrent Vercel builds cannot race.
+    await pool.query('SELECT pg_advisory_lock(hashtext($1))', ['flowsync-schema-migrations']);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         id varchar(255) PRIMARY KEY,
@@ -70,7 +73,11 @@ async function runMigrations(): Promise<void> {
 
     console.log('[MIGRATE] Migrations completed successfully.');
   } finally {
-    await pool.end();
+    try {
+      await pool.query('SELECT pg_advisory_unlock(hashtext($1))', ['flowsync-schema-migrations']);
+    } finally {
+      await pool.end();
+    }
   }
 }
 

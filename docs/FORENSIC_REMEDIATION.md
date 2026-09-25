@@ -242,3 +242,15 @@ At minimum verify authentication/session continuity, workspace membership/roles,
 
 ### Production evidence rule
 An area may be marked VERIFIED only after recording the exact production test, target/deployment identity, observed result, date/time, and relevant evidence/artifacts, plus any limitation. A green CI run, successful build, preview deployment, or migration against a disposable database is not production verification.
+
+## Production migration execution model
+
+The CI PostgreSQL services are validation databases only. They prove that the committed migration set can build a clean schema and that E2E setup succeeds; they are not the production database.
+
+Production schema changes are executed by the Vercel production build. The frontend build command checks `VERCEL_ENV`; only when it is `production` does it install the committed backend dependencies and run `npm run migrate` against Vercel's production `DATABASE_URL`. Preview/local builds do not run production migrations.
+
+The migration runner remains idempotent through the `schema_migrations` table, applies only committed migration files not already recorded, verifies required tables afterward, and now takes a PostgreSQL advisory lock so concurrent Vercel production builds cannot race the same migration set. A migration failure exits non-zero and therefore prevents that Vercel build from completing.
+
+This deliberately uses a cheap migration-state check on every production build rather than a Git-diff-only trigger. A later deployment must still detect and repair any previously unapplied committed migration even if that deployment contains only application changes.
+
+The production migration path is therefore: **Vercel production build → migration state check → apply pending committed migrations if any → schema verification → Next.js build → deployment**. GitHub Actions remains responsible for disposable-database migration/build/E2E validation and does not receive the production database secret.
