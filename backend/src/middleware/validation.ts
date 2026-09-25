@@ -82,3 +82,17 @@ export const aiBreakdownSchema = z.object({
   goal: z.string().min(3, 'Goal must be at least 3 characters').max(5000, 'Goal too long'),
   targetColumnId: z.string().uuid('Invalid column ID').optional(),
 });
+
+
+export const workspaceRoleSchema = z.object({
+  role: z.enum(['admin', 'member', 'viewer']),
+});
+
+export const uuidParamSchema = z.object({
+  id: z.string().uuid('Invalid workspace ID'),
+});
+
+export const memberParamSchema = z.object({
+  id: z.string().uuid('Invalid workspace ID'),
+  memberId: z.string().uuid('Invalid member ID'),
+});
