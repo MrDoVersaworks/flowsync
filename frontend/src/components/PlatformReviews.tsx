@@ -26,14 +26,8 @@ export function PlatformReviews() {
   });
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('flowsync_app_reviews');
-      if (stored) {
-        setReviews(JSON.parse(stored));
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+    fetch(`${apiBase}/api/public/reviews`).then(r => r.json()).then(data => setReviews(data.data || [])).catch(() => setReviews([]));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,39 +40,19 @@ export function PlatformReviews() {
     setIsSubmitting(true);
     setErrorMsg('');
 
-    const newReview: Review = {
-      id: Date.now().toString(),
-      name: form.name.trim(),
-      profession: form.profession.trim() || 'Verified User',
-      rating: form.rating,
-      feedback: form.feedback.trim(),
-      createdAt: new Date().toLocaleDateString()
-    };
-
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      await fetch(`${backendUrl}/api/contact`, {
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+      const response = await fetch(`${apiBase}/api/public/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: `${form.name.trim().toLowerCase().replace(/\s+/g, '.')}@user.flowsync`,
-          message: `[FlowSync App Review - ${form.rating}/5 Stars] (${form.profession || 'User'}): ${form.feedback.trim()}`
-        })
+        body: JSON.stringify(form),
       });
+      if (!response.ok) throw new Error('Review submission failed');
+      setSubmitted(true);
     } catch {
-      // Still persist locally even if backend transmission fails
+      setErrorMsg('Review could not be submitted. Please try again.');
     }
-
-    const updated = [newReview, ...reviews];
-    setReviews(updated);
-    try {
-      localStorage.setItem('flowsync_app_reviews', JSON.stringify(updated));
-    } catch {
-      // Ignore storage errors
-    }
-
-    setSubmitted(true);
+        setSubmitted(true);
     setIsSubmitting(false);
     setForm({ name: '', profession: '', rating: 5, feedback: '' });
   };
@@ -132,8 +106,8 @@ export function PlatformReviews() {
         {submitted ? (
           <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem auto', fontSize: '1.5rem', fontWeight: 'bold' }}>✓</div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>Review Published!</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>Your feedback has been published and added to the FlowSync reviews above.</p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.5rem' }}>Review Submitted for Moderation</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>Your feedback is pending review and will appear publicly only after approval.</p>
             <button
               onClick={() => setSubmitted(false)}
               style={{ background: 'rgba(255,255,255,0.05)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)', padding: '0.5rem 1rem', borderRadius: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}
