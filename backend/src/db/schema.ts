@@ -147,6 +147,7 @@ export const platformReviews = pgTable('platform_reviews', {
   profession: varchar('profession', { length: 255 }),
   rating: integer('rating').notNull().default(5),
   feedback: text('feedback').notNull(),
+  approved: boolean('approved').notNull().default(false),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
