@@ -3,25 +3,40 @@ import { db } from '../db/connection.js';
 import { contactMessages } from '../db/schema.js';
 import { z } from 'zod';
 import { AppError } from '../middleware/errorHandler.js';
+import { rateLimit } from 'express-rate-limit';
 
 const router = Router();
-
-const contactSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  email: z.string().email('Invalid email address').max(255),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(5000),
-  ai_screening_passed: z.boolean().optional().default(false),
+const contactRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const contactSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  email: z.string().trim().email().max(255),
+  message: z.string().trim().min(10).max(5000),
+  website: z.string().max(0).optional().default(''),
+});
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] || char);
+}
+
+router.post('/', contactRateLimiter, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const parsed = contactSchema.parse(req.body);
+    if (parsed.website) {
+      res.status(202).json({ success: true, message: 'Message accepted.' });
+      return;
+    }
 
     await db.insert(contactMessages).values({
       sender_name: parsed.name,
       sender_email: parsed.email,
       message: parsed.message,
-      ai_screening_passed: parsed.ai_screening_passed,
+      ai_screening_passed: false,
     });
 
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -36,20 +51,17 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
           from: sendingDomain,
           to: receiverEmail,
           subject: `[FlowSync] New Contact Message from ${parsed.name}`,
-          html: `<p><strong>From:</strong> ${parsed.name} (${parsed.email})</p><p>${parsed.message}</p>`
+          html: `<p><strong>From:</strong> ${escapeHtml(parsed.name)} (${escapeHtml(parsed.email)})</p><p>${escapeHtml(parsed.message)}</p>`
         });
       } catch (emailErr) {
         console.error('[RESEND_DISPATCH_ERROR]', emailErr);
       }
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Message sent successfully',
-    });
+    res.status(201).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      next(new AppError(error.issues[0].message, 400));
+      next(new AppError(error.issues[0]?.message || 'Invalid contact request', 400));
       return;
     }
     next(error);
