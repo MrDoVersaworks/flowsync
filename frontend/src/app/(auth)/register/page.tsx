@@ -7,10 +7,26 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 
+function EyeIcon({ hidden }: { hidden: boolean }) {
+  return hidden ? (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m3 3 18 18" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17.5 17.5 0 0 1-3.3 3.9M6.2 6.3C3.7 8 2.5 12 2.5 12s3.5 6 9.5 6c1.4 0 2.6-.3 3.7-.8" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 9.9a3 3 0 1 0 4.2 4.2" />
+    </svg>
+  );
+}
+
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
