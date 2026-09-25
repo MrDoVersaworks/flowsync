@@ -37,3 +37,16 @@ BEGIN
 END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique_idx ON users (lower(email));
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'workspace_members_role_check') THEN
+    ALTER TABLE workspace_members ADD CONSTRAINT workspace_members_role_check CHECK (role IN ('member', 'viewer', 'admin'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tasks_priority_check') THEN
+    ALTER TABLE tasks ADD CONSTRAINT tasks_priority_check CHECK (priority IN ('low', 'medium', 'high', 'urgent'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'platform_reviews_rating_check') THEN
+    ALTER TABLE platform_reviews ADD CONSTRAINT platform_reviews_rating_check CHECK (rating BETWEEN 1 AND 5);
+  END IF;
+END $$;
