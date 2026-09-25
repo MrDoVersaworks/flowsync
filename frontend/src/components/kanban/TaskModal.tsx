@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Flag, AlignLeft, Trash2, Clock, CheckCircle2, MessageSquare, Send, Sparkles } from 'lucide-react';
 import { Task, useWorkspaceStore } from '@/store/useWorkspaceStore';
@@ -36,6 +36,15 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
   const { board, setBoard, activeWorkspace } = useWorkspaceStore();
   const isOwner = activeWorkspace?.owner_id === user?.id;
 
+  const fetchComments = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/comments/${task.id}`);
+      setComments(data.data);
+    } catch {
+      console.error('Failed to fetch comments');
+    }
+  }, [task.id]);
+
   useEffect(() => {
     if (isOpen) {
       fetchComments();
@@ -64,15 +73,6 @@ export default function TaskModal({ task, isOpen, onClose, isViewer }: Props) {
       };
     }
   }, [isOpen, task.id]);
-
-  const fetchComments = async () => {
-    try {
-      const { data } = await api.get(`/comments/${task.id}`);
-      setComments(data.data);
-    } catch (error) {
-      console.error('Failed to fetch comments');
-    }
-  };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
