@@ -12,7 +12,7 @@ import { requireWorkspaceMutation } from './authorization.service.js';
 
 import { tasks, columns } from '../db/schema.js';
 import { io } from '../index.js';
-import { getBoard, verifyColumnInWorkspace } from './kanban.service.js';
+import { getBoard } from './kanban.service.js';
 
 const aiBreakdownResultSchema = z.object({
   suggested_column_title: z.string().trim().min(1).max(100),
@@ -89,8 +89,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     const parsed = aiBreakdownResultSchema.parse(JSON.parse(cleanedText));
 
     // 4. Persist the entire inception atomically. No realtime event is emitted before commit.
-    let columnId: string;
-    await db.transaction(async (tx) => {
+    const columnId = await db.transaction(async (tx) => {
       if (targetColumnId) {
         const matching = await tx.select({ id: columns.id })
           .from(columns)
@@ -99,14 +98,14 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
         if (matching.length === 0) {
           throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Target column not found in this workspace' };
         }
-        columnId = targetColumnId;
+        return targetColumnId;
       } else {
         const [newCol] = await tx.insert(columns).values({
           workspace_id: workspaceId,
           title: parsed.suggested_column_title,
           position: 0,
         }).returning({ id: columns.id });
-        columnId = newCol.id;
+        return newCol.id;
       }
 
       const taskValues = parsed.tasks.map((task, index) => ({
@@ -119,6 +118,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
         created_by: userId,
       }));
       await tx.insert(tasks).values(taskValues);
+      return columnId;
     });
 
     // 5. Real-Time Convergence: Broadcast to Sanctuary
