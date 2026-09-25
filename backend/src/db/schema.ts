@@ -1,5 +1,19 @@
-import { pgTable, uuid, varchar, text, timestamp, integer, boolean, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, integer, boolean, primaryKey, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// ============================================================
+// TABLE: refresh_sessions
+// ============================================================
+export const refreshSessions = pgTable('refresh_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token_hash: varchar('token_hash', { length: 64 }).notNull().unique(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revoked_at: timestamp('revoked_at', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('refresh_sessions_user_id_idx').on(t.user_id),
+}));
 
 // ============================================================
 // TABLE: users
@@ -43,7 +57,9 @@ export const workspaceMembers = pgTable('workspace_members', {
   workspace_id: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   role: varchar('role', { length: 20 }).notNull().default('member'), // 'admin' | 'member' | 'viewer'
   joined_at: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  pk: primaryKey({ columns: [t.user_id, t.workspace_id] }),
+}));
 
 // ============================================================
 // TABLE: columns (Kanban Columns)
