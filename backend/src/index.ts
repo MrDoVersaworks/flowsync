@@ -15,6 +15,7 @@ import { verifyToken } from './services/auth.service.js';
 import { db } from './db/connection.js';
 import { users, workspaceMembers } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { jwtBlocklist } from './utils/blocklist.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -131,6 +132,8 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token ||
       socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
     if (!token) return next(new Error('Authentication required'));
+    const signature = token.split('.')[2];
+    if (signature && jwtBlocklist.has(signature)) return next(new Error('Session invalidated'));
 
     const user = await verifyToken(token);
     const userRow = await db.select({ id: users.id, name: users.name })
