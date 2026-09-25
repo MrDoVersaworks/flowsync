@@ -1,6 +1,6 @@
 import { eq, and, asc, sql, count, lt, or, isNull, ne, max } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { columns, tasks, workspaceMembers, taskComments, taskReads } from '../db/schema.js';
+import { columns, tasks, taskComments, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
