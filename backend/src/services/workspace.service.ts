@@ -207,6 +207,9 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
 export async function deleteWorkspace(userId: string, workspaceId: string, password?: string): Promise<void> {
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const user = userResult[0];
+  if (!user) {
+    throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
+  }
 
   if (!password || !(await bcrypt.compare(password, user.password_hash))) {
     throw { status: 401, code: ErrorCode.AUTH_INVALID_CREDENTIALS, message: 'Invalid verification credentials.' };
