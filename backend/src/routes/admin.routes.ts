@@ -5,138 +5,120 @@ import { eq, desc } from 'drizzle-orm';
 import { authMiddleware } from '../middleware/auth.js';
 import { ownerMiddleware } from '../middleware/owner.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { z } from 'zod';
 
 const router = Router();
-
-// Protect all admin routes
 router.use(authMiddleware);
 router.use(ownerMiddleware);
 
-// GET /api/admin/inbox - Retrieve all messages
+const idSchema = z.object({ id: z.string().uuid() });
+const readStateSchema = z.object({ isRead: z.boolean() });
+
+function toMessageDto(message: typeof contactMessages.$inferSelect) {
+  return {
+    id: message.id,
+    name: message.sender_name,
+    email: message.sender_email,
+    message: message.message,
+    isRead: message.is_read,
+    aiScreeningPassed: message.ai_screening_passed,
+    createdAt: message.created_at.toISOString(),
+  };
+}
+
 router.get('/inbox', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const messages = await db
-      .select()
-      .from(contactMessages)
-      .orderBy(desc(contactMessages.created_at));
-
-    res.status(200).json({
-      success: true,
-      data: messages,
-    });
-  } catch (error) {
-    next(error);
-  }
+    const messages = await db.select().from(contactMessages).orderBy(desc(contactMessages.created_at));
+    res.status(200).json({ success: true, data: messages.map(toMessageDto) });
+  } catch (error) { next(error); }
 });
 
-// PATCH /api/admin/inbox/:id/read - Mark message as read
-router.patch('/inbox/:id/read', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.patch('/inbox/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
-
-    const [updated] = await db
-      .update(contactMessages)
-      .set({ is_read: true })
-      .where(eq(contactMessages.id, id as any))
+    const { id } = idSchema.parse(req.params);
+    const { isRead } = readStateSchema.parse(req.body);
+    const [updated] = await db.update(contactMessages)
+      .set({ is_read: isRead })
+      .where(eq(contactMessages.id, id))
       .returning();
-
     if (!updated) {
       next(new AppError('Message not found', 404));
       return;
     }
-
-    res.status(200).json({
-      success: true,
-      data: updated,
-    });
+    res.status(200).json({ success: true, data: toMessageDto(updated) });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.issues[0]?.message || 'Invalid inbox request', 400));
+      return;
+    }
     next(error);
   }
 });
 
-// DELETE /api/admin/inbox/:id - Delete message
 router.delete('/inbox/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
-
-    const [deleted] = await db
-      .delete(contactMessages)
-      .where(eq(contactMessages.id, id as any))
-      .returning();
-
+    const { id } = idSchema.parse(req.params);
+    const [deleted] = await db.delete(contactMessages).where(eq(contactMessages.id, id)).returning();
     if (!deleted) {
       next(new AppError('Message not found', 404));
       return;
     }
-
-    res.status(200).json({
-      success: true,
-      data: null,
-    });
+    res.status(200).json({ success: true, data: null });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.issues[0]?.message || 'Invalid message id', 400));
+      return;
+    }
     next(error);
   }
 });
 
-
-// ============================================================
-// GLOBAL SETTINGS (Legal & Analytics)
-// ============================================================
 router.get('/settings', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-        const settingsArray = await db.select().from(systemSettings).limit(1);
+    const settingsArray = await db.select().from(systemSettings).limit(1);
     const settings = settingsArray[0] || { google_analytics_id: '', termly_uuid: '' };
     res.status(200).json({ success: true, data: settings });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 });
 
 router.put('/settings', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-        const { google_analytics_id, termly_uuid } = req.body;
+    const { google_analytics_id, termly_uuid } = req.body;
     const settingsArray = await db.select().from(systemSettings).limit(1);
-    
     let updated;
     if (settingsArray.length > 0) {
       [updated] = await db.update(systemSettings)
         .set({ google_analytics_id: google_analytics_id || null, termly_uuid: termly_uuid || null, updated_at: new Date() })
-        .where(eq(systemSettings.id, settingsArray[0].id))
-        .returning();
+        .where(eq(systemSettings.id, settingsArray[0].id)).returning();
     } else {
       [updated] = await db.insert(systemSettings)
-        .values({ google_analytics_id: google_analytics_id || null, termly_uuid: termly_uuid || null })
-        .returning();
+        .values({ google_analytics_id: google_analytics_id || null, termly_uuid: termly_uuid || null }).returning();
     }
-
     res.status(200).json({ success: true, data: updated });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 });
 
-// ============================================================
-// REVIEWS MODERATION
-// ============================================================
 router.get('/reviews', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const reviews = await db.select().from(platformReviews).orderBy(desc(platformReviews.created_at));
     res.status(200).json({ success: true, data: reviews });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 });
 
 router.delete('/reviews/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { id } = req.params;
-    const [deleted] = await db.delete(platformReviews).where(eq(platformReviews.id, id as any)).returning();
+    const { id } = idSchema.parse(req.params);
+    const [deleted] = await db.delete(platformReviews).where(eq(platformReviews.id, id)).returning();
     if (!deleted) {
-      next(new AppError('[ERR_REVIEW_NOT_FOUND] Review not found.', 404));
+      next(new AppError('Review not found.', 404));
       return;
     }
     res.status(200).json({ success: true, data: null });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new AppError(error.issues[0]?.message || 'Invalid review id', 400));
+      return;
+    }
     next(error);
   }
 });
