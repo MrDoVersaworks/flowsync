@@ -68,3 +68,61 @@ The portfolio audit snapshot at public-systems/flowsync/ORIGINAL_AUDIT.md contai
 
 ## Work status
 This document records the pre-fix reconstruction. Code remediation follows in separate commits on audit-remediation only.
+
+
+## Remediation batch 1 — implemented on audit-remediation
+### Authentication / session
+- Refresh credentials are no longer returned to the browser as JSON or persisted by Zustand.
+- Refresh tokens are random opaque values stored only as SHA-256 hashes in refresh_sessions.
+- Refresh rotation is single-use: the database update that revokes the old token is the concurrency gate.
+- Access tokens remain short-lived JWTs; the frontend keeps the access token in memory and refreshes through an httpOnly cookie.
+- Login/register/refresh/logout contracts were aligned.
+- Production frontend builds now fail closed if NEXT_PUBLIC_API_URL is absent.
+- Global admin authorization now derives from ADMIN_USER_ID, never from a mutable email claim.
+
+### Workspace authorization
+- Centralized capability resolution now distinguishes owner/admin/member/viewer.
+- Kanban mutations require mutation capability; viewers are read-only at the service boundary.
+- Comment creation/deletion/purge follows workspace capabilities.
+- Owner-only role changes/removal and workspace deletion are enforced server-side.
+- Owner cannot be removed or demoted.
+- Workspace membership now has a composite primary key.
+- Workspace creation is transactional and invite codes use cryptographic randomness.
+- Invite attempts use a database-backed rate limiter.
+
+### Realtime
+- Socket.IO now authenticates the JWT before accepting connections.
+- Socket workspace joins derive user identity from the authenticated socket and verify membership server-side.
+- Client-supplied user identity is no longer trusted.
+- Socket authentication honors the existing JWT blocklist.
+- Pusher workspace channels are private and have an authenticated membership-checking authorization endpoint.
+- HTTP and Socket.IO CORS now use the same normalized origin list.
+- Rejoining a socket cleans the previous workspace presence entry.
+
+### Persistence / contracts
+- A deterministic Drizzle baseline and security migration were added because migrate.ts previously referenced a missing ./drizzle directory.
+- Migration adds membership uniqueness, role/priority/rating checks, refresh sessions, review moderation state, case-normalized email uniqueness, and shared rate-limit buckets.
+- Existing case-insensitive duplicate emails deliberately fail the migration rather than silently merging accounts.
+- AI output is parsed through a strict Zod schema and the generated column/tasks are committed in one database transaction before realtime notification.
+- Admin inbox DTOs now match the frontend contract and support the frontend's PATCH /admin/inbox/:id operation.
+- Public reviews are backend-moderated; localStorage is no longer an authoritative publication source.
+- Contact screening/trust fields are server-owned; visitor-supplied Gemini keys and screening claims were removed.
+- Contact notification HTML is escaped before email delivery.
+- Error responses now expose correlation IDs and do not expose internal error messages for 5xx responses.
+- Malformed UUID route parameters are rejected at the route boundary.
+
+## Testing / verification evidence
+- Repository history and current source were inspected before code changes.
+- Main remains unchanged at 91d931f5f7cc30436a4b0cee293859f59e9d34e3.
+- audit-remediation currently contains the remediation commits and is the only modified branch.
+- GitHub Actions workflow was strengthened to run migrations, backend typecheck/build, and frontend lint/typecheck/build, but no workflow run was created for this branch in the connected GitHub environment.
+- Vercel produced READY deployments for intermediate audit-remediation commits (including 556fb5909203990fb87fb87db4d821f24f7203d9). Later deployment attempts were queued/cancelled due Vercel build/deployment rate limits. Therefore a clean build of the final SHA has NOT been claimed.
+- No database-backed integration environment was available in this session for executing the migration and authorization tests directly.
+- The final branch must therefore remain a draft remediation state until the CI/deployment gates can execute against the final SHA.
+
+## Known remaining / intentionally unverified areas
+- Socket.IO process-local presence remains a single-instance fallback. Pusher production presence needs a dedicated presence-channel path if multi-instance presence is required independently of Pusher event delivery.
+- General non-security load limiting remains process-local; security/cost-critical auth, AI, invite and contact limits use the database-backed limiter.
+- Access-token revocation is bounded by access-token lifetime; refresh-session revocation is durable. A durable access-token denylist would require adding a server-side token/session identifier contract.
+- CI workflow has been strengthened but is not yet evidenced by a completed run in this environment.
+- Final Vercel deployment is not yet evidenced as READY.
