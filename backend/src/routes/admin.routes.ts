@@ -98,6 +98,19 @@ router.put('/settings', async (req: Request, res: Response, next: NextFunction):
   } catch (error) { next(error); }
 });
 
+router.patch('/reviews/:id/approval', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const approved = z.object({ approved: z.boolean() }).parse(req.body).approved;
+    const [updated] = await db.update(platformReviews).set({ approved, updated_at: new Date() }).where(eq(platformReviews.id, id)).returning();
+    if (!updated) { next(new AppError('Review not found.', 404)); return; }
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) { next(new AppError(error.issues[0]?.message || 'Invalid review moderation request', 400)); return; }
+    next(error);
+  }
+});
+
 router.get('/reviews', async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const reviews = await db.select().from(platformReviews).orderBy(desc(platformReviews.created_at));
