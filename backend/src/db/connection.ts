@@ -5,9 +5,7 @@ import * as schema from './schema.js';
 
 const pool = new Pool({
   connectionString: config.databaseUrl,
-  ssl: {
-    rejectUnauthorized: false, // Required for Neon
-  },
+  ssl: config.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 export const db = drizzle(pool, { schema });
