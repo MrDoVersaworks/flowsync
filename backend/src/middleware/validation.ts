@@ -107,3 +107,15 @@ export const validateParams = (schema: z.ZodSchema) => (req: Request, res: Respo
     res.status(400).json({ success: false, error: { code: ErrorCode.VALIDATION_ERROR, message } });
   }
 };
+
+export const workspaceIdParamSchema = z.object({
+  workspaceId: z.string().uuid('Invalid workspace ID'),
+});
+
+export const taskIdParamSchema = z.object({
+  taskId: z.string().uuid('Invalid task ID'),
+});
+
+export const commentIdParamSchema = z.object({
+  commentId: z.string().uuid('Invalid comment ID'),
+});
