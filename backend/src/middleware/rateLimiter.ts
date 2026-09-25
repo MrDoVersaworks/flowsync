@@ -23,7 +23,7 @@ export function persistentRateLimit(options: { name: string; windowMs: number; m
       void db.delete(rateLimitBuckets).where(and(
         eq(rateLimitBuckets.bucket_key, key),
         lt(rateLimitBuckets.window_start, windowStart),
-      ));
+      )).catch(() => undefined);
 
       if (Number(bucket.count) > options.max) {
         res.status(429).json({
