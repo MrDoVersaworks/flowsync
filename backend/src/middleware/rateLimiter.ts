@@ -42,3 +42,15 @@ export const generalRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+
+export const inviteRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Too many invite attempts. Please try again later.' },
+  },
+});
