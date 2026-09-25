@@ -29,9 +29,6 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { board, setBoard } = useWorkspaceStore();
 
-  // Guard: skip rendering if task data is malformed (prevents white-screen crash)
-  if (!task || !task.id) return null;
-  
   const {
     attributes,
     listeners,
@@ -48,6 +45,9 @@ export default function KanbanTask({ task, isOverlay, isViewer }: Props) {
     disabled: isOverlay || isViewer
   });
 
+  // Guard: skip rendering if task data is malformed (prevents white-screen crash)
+  if (!task || !task.id) return null;
+  
   const style = {
     transition,
     transform: CSS.Translate.toString(transform),
