@@ -1,11 +1,12 @@
 import { and, eq, lt, sql } from 'drizzle-orm';
+import type { Request, Response, NextFunction } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { ErrorCode } from '../constants.js';
 import { db } from '../db/connection.js';
 import { rateLimitBuckets } from '../db/schema.js';
 
 export function persistentRateLimit(options: { name: string; windowMs: number; max: number }) {
-  return async (req: Parameters<typeof rateLimit>[0] extends never ? never : any, res: any, next: any) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const nowMs = Date.now();
     const windowStart = new Date(Math.floor(nowMs / options.windowMs) * options.windowMs);
     const key = `${options.name}:${req.ip || req.socket.remoteAddress || 'unknown'}`;
