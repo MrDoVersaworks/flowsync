@@ -38,7 +38,7 @@ export default function WorkspacePage() {
 
       socketService.connect();
       if (user) {
-        socketService.joinWorkspace(id as string, { id: user.id, name: user.name });
+        socketService.joinWorkspace(id as string);
       }
     } catch (error: unknown) {
       toast.error('Failed to load board');
