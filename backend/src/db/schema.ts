@@ -2,20 +2,6 @@ import { pgTable, uuid, varchar, text, timestamp, integer, boolean, primaryKey, 
 import { relations } from 'drizzle-orm';
 
 // ============================================================
-// TABLE: refresh_sessions
-// ============================================================
-export const refreshSessions = pgTable('refresh_sessions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  token_hash: varchar('token_hash', { length: 64 }).notNull().unique(),
-  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
-  revoked_at: timestamp('revoked_at', { withTimezone: true }),
-  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (t) => ({
-  userIdx: index('refresh_sessions_user_id_idx').on(t.user_id),
-}));
-
-// ============================================================
 // TABLE: users
 // ============================================================
 export const users = pgTable('users', {
@@ -37,6 +23,20 @@ export const users = pgTable('users', {
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ============================================================
+// TABLE: refresh_sessions
+// ============================================================
+export const refreshSessions = pgTable('refresh_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token_hash: varchar('token_hash', { length: 64 }).notNull().unique(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revoked_at: timestamp('revoked_at', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('refresh_sessions_user_id_idx').on(t.user_id),
+}));
 
 // ============================================================
 // TABLE: workspaces
