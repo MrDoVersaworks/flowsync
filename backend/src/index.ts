@@ -163,6 +163,20 @@ io.on('connection', (socket) => {
       return;
     }
 
+    const previousWorkspaceId = socket.data.workspaceId as string | undefined;
+    if (previousWorkspaceId && previousWorkspaceId !== workspaceId) {
+      socket.leave(previousWorkspaceId);
+      const previousMinds = activeMinds.get(previousWorkspaceId);
+      if (previousMinds) {
+        for (const mind of previousMinds) {
+          if (mind.socketId === socket.id) previousMinds.delete(mind);
+        }
+        io.to(previousWorkspaceId).emit(SocketEvent.PRESENCE_UPDATED, Array.from(new Map(
+          Array.from(previousMinds).map(m => [m.userId, m])
+        ).values()));
+      }
+    }
+
     socket.join(workspaceId);
     socket.data.workspaceId = workspaceId;
     const user = { id: userId, name: socket.data.userName as string };
