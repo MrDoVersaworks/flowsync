@@ -11,6 +11,10 @@ import { logger } from './utils/logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import { generalRateLimiter, authRateLimiter, aiRateLimiter } from './middleware/rateLimiter.js';
 import { SocketEvent } from './constants.js';
+import { verifyToken } from './services/auth.service.js';
+import { db } from './db/connection.js';
+import { users, workspaceMembers } from './db/schema.js';
+import { eq, and } from 'drizzle-orm';
 
 const app = express();
 const server = http.createServer(app);
@@ -122,17 +126,43 @@ app.use(errorHandler);
 // Map to track active collaborative minds
 const activeMinds = new Map<string, Set<{ userId: string, name: string, socketId: string }>>();
 
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token ||
+      socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
+    if (!token) return next(new Error('Authentication required'));
+
+    const user = await verifyToken(token);
+    const userRow = await db.select({ id: users.id, name: users.name })
+      .from(users).where(eq(users.id, user.userId)).limit(1);
+    if (userRow.length === 0) return next(new Error('Authenticated user not found'));
+
+    socket.data.userId = user.userId;
+    socket.data.userName = userRow[0].name;
+    next();
+  } catch {
+    next(new Error('Invalid or expired session'));
+  }
+});
+
 io.on('connection', (socket) => {
   logger.info('SOCKET', `Intelligence linked: ${socket.id}`);
 
-  socket.on(SocketEvent.JOIN_WORKSPACE, (data: { workspaceId: string, user: { id: string, name: string } }) => {
-    const { workspaceId, user } = data;
-    socket.join(workspaceId);
+  socket.on(SocketEvent.JOIN_WORKSPACE, async (data: { workspaceId: string }) => {
+    const { workspaceId } = data;
+    const userId = socket.data.userId as string;
+    const membership = await db.select({ userId: workspaceMembers.user_id })
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.user_id, userId), eq(workspaceMembers.workspace_id, workspaceId)))
+      .limit(1);
+    if (membership.length === 0) {
+      socket.emit('error', { code: 'AUTH_FORBIDDEN', message: 'Workspace membership required' });
+      return;
+    }
 
-    // Store user info in socket data for cleanup
-    (socket as any).userId = user.id;
-    (socket as any).workspaceId = workspaceId;
-    (socket as any).userName = user.name;
+    socket.join(workspaceId);
+    socket.data.workspaceId = workspaceId;
+    const user = { id: userId, name: socket.data.userName as string };
 
     // Track active minds (Ensure no duplicates for the same socketId)
     if (!activeMinds.has(workspaceId)) {
@@ -158,7 +188,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on(SocketEvent.LEAVE_WORKSPACE, () => {
-    const wsId = (socket as any).workspaceId;
+    const wsId = socket.data.workspaceId as string | undefined;
     if (wsId && activeMinds.has(wsId)) {
       const minds = activeMinds.get(wsId)!;
       for (const mind of minds) {
@@ -178,7 +208,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const wsId = (socket as any).workspaceId;
-    const uId = (socket as any).userId;
 
     if (wsId && activeMinds.has(wsId)) {
       const minds = activeMinds.get(wsId)!;
