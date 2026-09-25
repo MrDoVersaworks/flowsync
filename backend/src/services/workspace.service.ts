@@ -1,15 +1,15 @@
-import { eq, and, desc, sql, count, lt, or, isNull, ne } from 'drizzle-orm';
+import { eq, and, desc, count, lt, or, isNull, ne } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { db } from '../db/connection.js';
 import { workspaces, workspaceMembers, users, tasks, taskComments, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { io } from '../index.js';
-import { 
-  WorkspaceResponse, 
-  WorkspaceDetailResponse, 
+import {
+  WorkspaceResponse,
+  WorkspaceDetailResponse,
   WorkspaceMemberResponse,
-  PaginatedWorkspaceResponse 
+  PaginatedWorkspaceResponse
 } from '../types/workspace.types.js';
 import { logger } from '../utils/logger.js';
 import { requireWorkspaceAdmin, requireWorkspaceOwner } from './authorization.service.js';
@@ -41,8 +41,14 @@ export async function createWorkspace(userId: string, name: string): Promise<Wor
 
   const workspace = await db.transaction(async (tx) => {
     let inviteCode = generateInviteCode();
+
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const collision = await tx.select({ id: workspaces.id }).from(workspaces).where(eq(workspaces.invite_code, inviteCode)).limit(1);
+      const collision = await tx
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(eq(workspaces.invite_code, inviteCode))
+        .limit(1);
+
       if (collision.length === 0) break;
       inviteCode = generateInviteCode();
     }
@@ -63,6 +69,7 @@ export async function createWorkspace(userId: string, name: string): Promise<Wor
       workspace_id: created.id,
       role: 'admin',
     });
+
     return created;
   });
 
@@ -71,8 +78,8 @@ export async function createWorkspace(userId: string, name: string): Promise<Wor
 }
 
 export async function listUserWorkspaces(
-  userId: string, 
-  page: number = 1, 
+  userId: string,
+  page: number = 1,
   limit: number = 20
 ): Promise<PaginatedWorkspaceResponse> {
   const offset = (page - 1) * limit;
@@ -82,7 +89,7 @@ export async function listUserWorkspaces(
     .from(workspaces)
     .innerJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspace_id))
     .where(eq(workspaceMembers.user_id, userId));
-  
+
   const total = countResult[0]?.totalCount || 0;
 
   const unreadCountsSubquery = db
@@ -183,6 +190,7 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
   if (wsResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Invalid invite code' };
   }
+
   const workspace = wsResult[0];
 
   const existing = await db
@@ -199,7 +207,9 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
     user_id: userId,
     workspace_id: workspace.id,
     role: 'member',
-  }).onConflictDoNothing({ target: [workspaceMembers.user_id, workspaceMembers.workspace_id] });
+  }).onConflictDoNothing({
+    target: [workspaceMembers.user_id, workspaceMembers.workspace_id]
+  });
 
   return toWorkspaceResponse(workspace);
 }
@@ -207,6 +217,7 @@ export async function joinWorkspaceByCode(userId: string, inviteCode: string): P
 export async function deleteWorkspace(userId: string, workspaceId: string, password?: string): Promise<void> {
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   const user = userResult[0];
+
   if (!user) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'User not found' };
   }
@@ -219,20 +230,35 @@ export async function deleteWorkspace(userId: string, workspaceId: string, passw
   if (wsResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
   }
+
   await requireWorkspaceOwner(userId, workspaceId);
   await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
 }
 
-export async function updateMemberRole(userId: string, workspaceId: string, memberId: string, role: 'admin' | 'member'): Promise<void> {
+export async function updateMemberRole(
+  userId: string,
+  workspaceId: string,
+  memberId: string,
+  role: 'admin' | 'member' | 'viewer'
+): Promise<void> {
   const wsResult = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
   if (wsResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
   }
+
   await requireWorkspaceOwner(userId, workspaceId);
-  if (memberId === wsResult[0].owner_id || role === 'owner') {
+
+  if (memberId === wsResult[0].owner_id) {
     throw { status: 409, code: ErrorCode.VALIDATION_ERROR, message: 'Workspace ownership cannot be changed through member role updates.' };
   }
-  await db.update(workspaceMembers).set({ role }).where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
+
+  await db.update(workspaceMembers)
+    .set({ role })
+    .where(and(
+      eq(workspaceMembers.workspace_id, workspaceId),
+      eq(workspaceMembers.user_id, memberId)
+    ));
+
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_UPDATED', workspaceId });
 }
 
@@ -241,10 +267,17 @@ export async function removeMember(userId: string, workspaceId: string, memberId
   if (wsResult.length === 0) {
     throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Workspace not found' };
   }
+
   await requireWorkspaceOwner(userId, workspaceId);
+
   if (memberId === wsResult[0].owner_id) {
     throw { status: 409, code: ErrorCode.VALIDATION_ERROR, message: 'Workspace owner cannot be removed.' };
   }
-  await db.delete(workspaceMembers).where(and(eq(workspaceMembers.workspace_id, workspaceId), eq(workspaceMembers.user_id, memberId)));
+
+  await db.delete(workspaceMembers).where(and(
+    eq(workspaceMembers.workspace_id, workspaceId),
+    eq(workspaceMembers.user_id, memberId)
+  ));
+
   io.to(workspaceId).emit(SocketEvent.BOARD_UPDATED, { type: 'MEMBER_PURGED', workspaceId });
 }
