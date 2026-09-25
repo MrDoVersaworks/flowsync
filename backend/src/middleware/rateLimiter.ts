@@ -1,56 +1,54 @@
+import { and, eq, lt, sql } from 'drizzle-orm';
 import { rateLimit } from 'express-rate-limit';
 import { ErrorCode } from '../constants.js';
+import { db } from '../db/connection.js';
+import { rateLimitBuckets } from '../db/schema.js';
 
-export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 requests per window for auth (Login/Register)
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.AUTH_UNAUTHORIZED,
-      message: 'Too many authentication attempts from this IP. Please try again after 15 minutes.'
-    }
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export function persistentRateLimit(options: { name: string; windowMs: number; max: number }) {
+  return async (req: Parameters<typeof rateLimit>[0] extends never ? never : any, res: any, next: any) => {
+    const nowMs = Date.now();
+    const windowStart = new Date(Math.floor(nowMs / options.windowMs) * options.windowMs);
+    const key = `${options.name}:${req.ip || req.socket.remoteAddress || 'unknown'}`;
 
-export const aiRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // Limit each IP to 50 AI orchestration requests per hour
-  message: {
-    success: false,
-    error: {
-      code: ErrorCode.AI_SERVICE_ERROR,
-      message: 'Sovereign AI quota exceeded for this hour. Orchestration will resume shortly.'
+    try {
+      const [bucket] = await db.insert(rateLimitBuckets)
+        .values({ bucket_key: key, window_start: windowStart, count: 1 })
+        .onConflictDoUpdate({
+          target: [rateLimitBuckets.bucket_key, rateLimitBuckets.window_start],
+          set: { count: sql`${rateLimitBuckets.count} + 1` },
+        })
+        .returning({ count: rateLimitBuckets.count });
+
+      void db.delete(rateLimitBuckets).where(and(
+        eq(rateLimitBuckets.bucket_key, key),
+        lt(rateLimitBuckets.window_start, windowStart),
+      ));
+
+      if (Number(bucket.count) > options.max) {
+        res.status(429).json({
+          success: false,
+          error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Rate limit exceeded. Please try again later.' },
+        });
+        return;
+      }
+      next();
+    } catch (error) {
+      next(error);
     }
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  };
+}
+
+export const authRateLimiter = persistentRateLimit({ name: 'auth', windowMs: 15 * 60 * 1000, max: 20 });
+export const aiRateLimiter = persistentRateLimit({ name: 'ai', windowMs: 60 * 60 * 1000, max: 50 });
+export const inviteRateLimiter = persistentRateLimit({ name: 'invite', windowMs: 15 * 60 * 1000, max: 20 });
 
 export const generalRateLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute for general API usage
+  windowMs: 1 * 60 * 1000,
+  max: 100,
   message: {
     success: false,
-    error: {
-      code: ErrorCode.INTERNAL_ERROR,
-      message: 'Infrastructure load threshold reached. Please wait a moment.'
-    }
+    error: { code: ErrorCode.INTERNAL_ERROR, message: 'Infrastructure load threshold reached. Please wait a moment.' },
   },
   standardHeaders: true,
   legacyHeaders: false,
-});
-
-
-export const inviteRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Too many invite attempts. Please try again later.' },
-  },
 });
