@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { eq, and, isNull, gt } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { users, refreshSessions } from '../db/schema.js';
-import { SALT_ROUNDS, AUTH_ACCESS_TOKEN_EXPIRY, AUTH_REFRESH_TOKEN_EXPIRY, ErrorCode } from '../constants.js';
+import { SALT_ROUNDS, AUTH_ACCESS_TOKEN_EXPIRY, ErrorCode } from '../constants.js';
 import { JWTPayload, AuthResponse, UserResponse } from '../types/auth.types.js';
 import { config } from '../config/index.js';
 
