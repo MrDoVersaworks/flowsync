@@ -2,11 +2,12 @@ import { Response, Router } from 'express';
 import { listTaskComments, createComment, deleteComment, purgeTaskComments, markTaskAsRead } from '../services/comment.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
+import { validateParams, taskIdParamSchema, commentIdParamSchema } from '../middleware/validation.js';
 
 const router = Router();
 
 // List comments for a task
-router.get('/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:taskId', validateParams(taskIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const taskId = req.params.taskId as string;
   const comments = await listTaskComments(userId, taskId);
@@ -14,7 +15,7 @@ router.get('/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
 }));
 
 // Add a comment to a task
-router.post('/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:taskId', validateParams(taskIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const taskId = req.params.taskId as string;
   const { content } = req.body;
@@ -23,7 +24,7 @@ router.post('/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => 
 }));
 
 // Delete a single comment
-router.delete('/:commentId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:commentId', validateParams(commentIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const commentId = req.params.commentId as string;
   await deleteComment(userId, commentId);
@@ -31,7 +32,7 @@ router.delete('/:commentId', asyncHandler(async (req: AuthRequest, res: Response
 }));
 
 // Purge all comments for a task
-router.delete('/task/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/task/:taskId', validateParams(taskIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const taskId = req.params.taskId as string;
   await purgeTaskComments(userId, taskId);
@@ -39,7 +40,7 @@ router.delete('/task/:taskId', asyncHandler(async (req: AuthRequest, res: Respon
 }));
 
 // Mark task as read
-router.post('/read/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/read/:taskId', validateParams(taskIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const taskId = req.params.taskId as string;
   await markTaskAsRead(userId, taskId);
