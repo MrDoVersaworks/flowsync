@@ -39,6 +39,17 @@ export const refreshSessions = pgTable('refresh_sessions', {
 }));
 
 // ============================================================
+// TABLE: rate_limit_buckets
+// ============================================================
+export const rateLimitBuckets = pgTable('rate_limit_buckets', {
+  bucket_key: varchar('bucket_key', { length: 255 }).notNull(),
+  window_start: timestamp('window_start', { withTimezone: true }).notNull(),
+  count: integer('count').notNull().default(0),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.bucket_key, t.window_start] }),
+}));
+
+// ============================================================
 // TABLE: workspaces
 // ============================================================
 export const workspaces = pgTable('workspaces', {
