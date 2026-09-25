@@ -22,7 +22,7 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', { email, password });
 
       if (data.success) {
-        setAuth(data.user, data.accessToken, data.refreshToken);
+        setAuth(data.user, data.accessToken);
         toast.success('Welcome back!');
         router.push('/workspaces');
       } else {
