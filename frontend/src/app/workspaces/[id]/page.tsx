@@ -28,7 +28,7 @@ export default function WorkspacePage() {
   const { user, isAuthenticated } = useAuthStore();
   const userRole = activeWorkspace?.members?.find(m => m.user_id === user?.id)?.role;
   const isViewer = userRole === 'viewer';
-  const isAdmin = userRole === 'admin' || activeWorkspace?.owner_id === user?.id;
+  const canManageMembers = activeWorkspace?.owner_id === user?.id;
 
   const fetchBoard = async () => {
     setLoading(true);
@@ -38,7 +38,7 @@ export default function WorkspacePage() {
 
       socketService.connect();
       if (user) {
-        socketService.joinWorkspace(id as string, { id: user.id, name: user.name });
+        socketService.joinWorkspace(id as string);
       }
     } catch (error: unknown) {
       toast.error('Failed to load board');
@@ -402,7 +402,7 @@ export default function WorkspacePage() {
                         </div>
 
                         <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-                          {isAdmin && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
+                          {canManageMembers && member.user_id !== user?.id && member.user_id !== activeWorkspace.owner_id ? (
                             <>
                               <select
                                 value={member.role}

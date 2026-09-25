@@ -1,68 +1,13 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-
-interface LegalDoc {
-  title: string;
-  content: string;
-  version: string;
-  updatedAt: string;
-}
-
 export default function PrivacyPolicyPage() {
-  const [doc, setDoc] = useState<LegalDoc | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchPrivacyPolicy() {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/v1/public/legal/privacy_policy`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            setDoc(json.data);
-          }
-        }
-      } catch (_err) {
-        // Fallback silently if offline or API unavailable
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPrivacyPolicy();
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#04071a] text-[#94a3b8] p-8 pt-24">
       <div className="max-w-4xl mx-auto py-12 space-y-8">
-        <h1 className="text-4xl font-bold mb-8 text-white">
-          {doc ? doc.title : 'Privacy Policy'}
-        </h1>
-        <p className="text-sm text-[#64748b]">
-          Version: {doc ? doc.version : '1.0.0'} &bull; Last updated: {doc ? new Date(doc.updatedAt).toLocaleDateString() : 'July 2026'}
-        </p>
-
-        {loading ? (
-          <div className="text-center py-12 text-slate-500">Loading document...</div>
-        ) : doc ? (
-          <div
-            className="prose prose-invert max-w-none space-y-4"
-            dangerouslySetInnerHTML={{ __html: doc.content }}
-          />
-        ) : (
-          <div className="space-y-6">
-            <section className="space-y-4">
-              <h2 className="text-2xl font-semibold text-white">1. Information We Collect</h2>
-              <p>When you use FlowSync, we collect information you provide directly: your name, email address, and workspace data.</p>
-            </section>
-            <section className="space-y-4">
-              <h2 className="text-2xl font-semibold text-white">2. Data Security</h2>
-              <p>All sensitive credentials are encrypted using AES-256-GCM before storage. Authentication tokens are transmitted via httpOnly secure cookies.</p>
-            </section>
-          </div>
-        )}
+        <h1 className="text-4xl font-bold text-white">Privacy Policy</h1>
+        <p className="text-sm text-[#64748b]">Version: 1.0.0 • Last updated: September 2026</p>
+        <section className="space-y-4"><h2 className="text-2xl font-semibold text-white">1. Information collected</h2><p>FlowSync stores account identity information, workspace membership and workspace content required to provide the service. Contact submissions are stored in the administrative inbox.</p></section>
+        <section className="space-y-4"><h2 className="text-2xl font-semibold text-white">2. Authentication and credentials</h2><p>Access tokens are held in application memory. Refresh credentials are stored in an httpOnly cookie and represented server-side by a hashed refresh-session record. User-supplied AI provider credentials are encrypted before persistence.</p></section>
+        <section className="space-y-4"><h2 className="text-2xl font-semibold text-white">3. Realtime data</h2><p>Realtime workspace events are authorized against the authenticated account and workspace membership. Public review content is displayed only after moderation approval.</p></section>
+        <section className="space-y-4"><h2 className="text-2xl font-semibold text-white">4. Contact and abuse controls</h2><p>Contact messages are validated and protected by server-side abuse controls. Untrusted contact content is escaped before inclusion in HTML email notifications.</p></section>
       </div>
     </div>
   );

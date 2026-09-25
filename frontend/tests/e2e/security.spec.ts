@@ -29,6 +29,28 @@ test.describe('FlowSync — Security & Isolation Guards (SIL Rules)', () => {
     expect(res.status()).toBe(401);
   });
 
+
+  /* ---- Pusher Private Channel Authorization ---- */
+  test('Pusher workspace authorization rejects unauthenticated access', async ({ request }) => {
+    const res = await request.post(`${BACKEND_URL}/api/realtime/auth`, {
+      data: {
+        socket_id: '123.456',
+        channel_name: 'private-workspace-00000000-0000-0000-0000-000000000000',
+      },
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test('Pusher authorization rejects malformed channel requests at the boundary', async ({ request }) => {
+    const res = await request.post(`${BACKEND_URL}/api/realtime/auth`, {
+      data: {
+        socket_id: '123.456',
+        channel_name: 'public-workspace-not-a-uuid',
+      },
+    });
+    expect(res.status()).toBe(401);
+  });
+
   /* ---- Error Formatting (SIL-23) ---- */
   test('error messages end with a period and sentence casing', async ({ request }) => {
     const res = await request.post(`${BACKEND_URL}/api/workspaces/join`, {

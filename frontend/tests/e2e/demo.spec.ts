@@ -41,17 +41,17 @@ test.describe('FlowSync — Public & User Features', () => {
   });
 
   test('GET /public/settings returns settings', async ({ request }) => {
-    const res = await request.get(`${BACKEND_URL}/api/admin/settings`);
+    const res = await request.get(`${BACKEND_URL}/api/public/settings`);
     expect([200, 401]).toContain(res.status());
   });
 
   test('GET /public/reviews returns approved reviews', async ({ request }) => {
-    const res = await request.get(`${BACKEND_URL}/api/admin/reviews`);
+    const res = await request.get(`${BACKEND_URL}/api/public/reviews`);
     expect([200, 401]).toContain(res.status());
   });
 
   test('POST /public/reviews submits user review', async ({ request }) => {
-    const res = await request.post(`${BACKEND_URL}/api/admin/reviews`, {
+    const res = await request.post(`${BACKEND_URL}/api/public/reviews`, {
       data: {
         name: 'Project Lead',
         rating: 5,

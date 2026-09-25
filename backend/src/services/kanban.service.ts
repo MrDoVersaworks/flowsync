@@ -1,23 +1,12 @@
 import { eq, and, asc, sql, count, lt, or, isNull, ne, max } from 'drizzle-orm';
 import { db } from '../db/connection.js';
-import { columns, tasks, workspaceMembers, taskComments, taskReads } from '../db/schema.js';
+import { columns, tasks, taskComments, taskReads } from '../db/schema.js';
 import { ErrorCode, SocketEvent } from '../constants.js';
 import { ColumnResponse, TaskResponse, KanbanBoardResponse, TaskMoveInput } from '../types/kanban.types.js';
 import { logger } from '../utils/logger.js';
 import { io } from '../index.js';
 import { broadcastRealtime } from '../utils/pusher.js';
-
-async function verifyMembership(userId: string, workspaceId: string) {
-  const membership = await db
-    .select()
-    .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.user_id, userId), eq(workspaceMembers.workspace_id, workspaceId)))
-    .limit(1);
-
-  if (membership.length === 0) {
-    throw { status: 403, code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Not a member of this workspace' };
-  }
-}
+import { requireWorkspaceMember, requireWorkspaceMutation } from './authorization.service.js';
 
 export async function verifyColumnInWorkspace(
   workspaceId: string,
@@ -39,7 +28,7 @@ export async function verifyColumnInWorkspace(
 }
 
 export async function getBoard(userId: string, workspaceId: string): Promise<KanbanBoardResponse> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMember(userId, workspaceId);
 
   const cols = await db
     .select()
@@ -126,7 +115,7 @@ export async function getBoard(userId: string, workspaceId: string): Promise<Kan
 }
 
 export async function createColumn(userId: string, workspaceId: string, title: string): Promise<ColumnResponse> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
 
   const maxPosResult = await db
     .select({ maxPos: max(columns.position) })
@@ -150,7 +139,7 @@ export async function createColumn(userId: string, workspaceId: string, title: s
 }
 
 export async function createTask(userId: string, workspaceId: string, columnId: string, title: string, description?: string, priority?: string): Promise<TaskResponse> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
   await verifyColumnInWorkspace(workspaceId, columnId);
 
   const maxPosResult = await db
@@ -184,7 +173,7 @@ export async function createTask(userId: string, workspaceId: string, columnId: 
 }
 
 export async function updateTask(userId: string, workspaceId: string, taskId: string, data: any): Promise<TaskResponse> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
 
   const updated = await db.update(tasks)
     .set({
@@ -212,7 +201,7 @@ export async function updateTask(userId: string, workspaceId: string, taskId: st
 }
 
 export async function moveTask(userId: string, workspaceId: string, input: TaskMoveInput): Promise<void> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
   const { taskId, fromColumnId, toColumnId, newPosition } = input;
   await Promise.all([
     verifyColumnInWorkspace(workspaceId, fromColumnId),
@@ -264,7 +253,7 @@ export async function moveTask(userId: string, workspaceId: string, input: TaskM
 }
 
 export async function deleteTask(userId: string, workspaceId: string, taskId: string): Promise<void> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
 
   const deleted = await db.delete(tasks)
     .where(and(eq(tasks.id, taskId), eq(tasks.workspace_id, workspaceId)))
@@ -280,7 +269,7 @@ export async function deleteTask(userId: string, workspaceId: string, taskId: st
 }
 
 export async function deleteColumn(userId: string, workspaceId: string, columnId: string): Promise<void> {
-  await verifyMembership(userId, workspaceId);
+  await requireWorkspaceMutation(userId, workspaceId);
 
   await db.transaction(async (tx) => {
     await tx.delete(tasks).where(and(eq(tasks.column_id, columnId), eq(tasks.workspace_id, workspaceId)));

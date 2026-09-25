@@ -12,14 +12,30 @@ if (config.pusherAppId && config.pusherKey && config.pusherSecret && config.push
     cluster: config.pusherCluster,
     useTLS: true,
   });
-  logger.info('PUSHER', 'Pusher Channels initialized for serverless real-time events');
+  logger.info('PUSHER', 'Pusher Channels initialized for private workspace events');
 }
 
-export function broadcastRealtime(channel: string, event: string, data: unknown): void {
+export function workspaceChannel(workspaceId: string): string {
+  return `private-workspace-${workspaceId}`;
+}
+
+export function authorizeWorkspaceChannel(socketId: string, channelName: string, userId: string, workspaceId: string) {
+  if (!pusherInstance) {
+    throw new Error('Pusher is not configured');
+  }
+  if (channelName !== workspaceChannel(workspaceId)) {
+    throw new Error('Invalid channel');
+  }
+  return pusherInstance.authorizeChannel(socketId, channelName, {
+    user_id: userId,
+  });
+}
+
+export function broadcastRealtime(workspaceId: string, event: string, data: unknown): void {
   if (pusherInstance) {
-    pusherInstance.trigger(channel, event, data).catch((err: unknown) => {
+    pusherInstance.trigger(workspaceChannel(workspaceId), event, data).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : 'Broadcast failed';
-      logger.error('PUSHER', `Failed to trigger event '${event}' on channel '${channel}': ${msg}`);
+      logger.error('PUSHER', `Failed to trigger event '${event}': ${msg}`);
     });
   }
 }

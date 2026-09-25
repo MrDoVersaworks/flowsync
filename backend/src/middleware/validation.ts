@@ -82,3 +82,40 @@ export const aiBreakdownSchema = z.object({
   goal: z.string().min(3, 'Goal must be at least 3 characters').max(5000, 'Goal too long'),
   targetColumnId: z.string().uuid('Invalid column ID').optional(),
 });
+
+
+export const workspaceRoleSchema = z.object({
+  role: z.enum(['admin', 'member', 'viewer']),
+});
+
+export const uuidParamSchema = z.object({
+  id: z.string().uuid('Invalid workspace ID'),
+});
+
+export const memberParamSchema = z.object({
+  id: z.string().uuid('Invalid workspace ID'),
+  memberId: z.string().uuid('Invalid member ID'),
+});
+
+
+export const validateParams = (schema: z.ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+  try {
+    req.params = schema.parse(req.params) as Record<string, string>;
+    next();
+  } catch (error: unknown) {
+    const message = error instanceof z.ZodError ? (error.issues[0]?.message || 'Invalid route parameters') : 'Invalid route parameters';
+    res.status(400).json({ success: false, error: { code: ErrorCode.VALIDATION_ERROR, message } });
+  }
+};
+
+export const workspaceIdParamSchema = z.object({
+  workspaceId: z.string().uuid('Invalid workspace ID'),
+});
+
+export const taskIdParamSchema = z.object({
+  taskId: z.string().uuid('Invalid task ID'),
+});
+
+export const commentIdParamSchema = z.object({
+  commentId: z.string().uuid('Invalid comment ID'),
+});

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, integer, boolean, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, integer, boolean, primaryKey, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ============================================================
@@ -25,6 +25,31 @@ export const users = pgTable('users', {
 });
 
 // ============================================================
+// TABLE: refresh_sessions
+// ============================================================
+export const refreshSessions = pgTable('refresh_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token_hash: varchar('token_hash', { length: 64 }).notNull().unique(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revoked_at: timestamp('revoked_at', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index('refresh_sessions_user_id_idx').on(t.user_id),
+}));
+
+// ============================================================
+// TABLE: rate_limit_buckets
+// ============================================================
+export const rateLimitBuckets = pgTable('rate_limit_buckets', {
+  bucket_key: varchar('bucket_key', { length: 255 }).notNull(),
+  window_start: timestamp('window_start', { withTimezone: true }).notNull(),
+  count: integer('count').notNull().default(0),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.bucket_key, t.window_start] }),
+}));
+
+// ============================================================
 // TABLE: workspaces
 // ============================================================
 export const workspaces = pgTable('workspaces', {
@@ -43,7 +68,9 @@ export const workspaceMembers = pgTable('workspace_members', {
   workspace_id: uuid('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
   role: varchar('role', { length: 20 }).notNull().default('member'), // 'admin' | 'member' | 'viewer'
   joined_at: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  pk: primaryKey({ columns: [t.user_id, t.workspace_id] }),
+}));
 
 // ============================================================
 // TABLE: columns (Kanban Columns)
@@ -131,6 +158,7 @@ export const platformReviews = pgTable('platform_reviews', {
   profession: varchar('profession', { length: 255 }),
   rating: integer('rating').notNull().default(5),
   feedback: text('feedback').notNull(),
+  approved: boolean('approved').notNull().default(false),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

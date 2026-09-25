@@ -10,7 +10,7 @@ export interface WorkspaceMemberResponse {
   user_id: string;
   name: string;
   email: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'viewer';
   joined_at: string;
 }
 

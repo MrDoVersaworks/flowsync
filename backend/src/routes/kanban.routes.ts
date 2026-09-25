@@ -1,4 +1,5 @@
 import { Response, Router } from 'express';
+import { z } from 'zod';
 import { getBoard, createColumn, createTask, updateTask, moveTask, deleteTask, deleteColumn } from '../services/kanban.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
@@ -7,13 +8,13 @@ import {
   createColumnSchema, 
   createTaskSchema, 
   updateTaskSchema,
-  moveTaskSchema 
+  moveTaskSchema, validateParams, workspaceIdParamSchema 
 } from '../middleware/validation.js';
 
 const router = Router();
 
 // Get full board for a workspace
-router.get('/:workspaceId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:workspaceId', validateParams(workspaceIdParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const board = await getBoard(userId, workspaceId);
@@ -21,7 +22,7 @@ router.get('/:workspaceId', asyncHandler(async (req: AuthRequest, res: Response)
 }));
 
 // Create column
-router.post('/:workspaceId/columns', validate(createColumnSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/columns', validateParams(workspaceIdParamSchema), validate(createColumnSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { title } = req.body;
@@ -30,7 +31,7 @@ router.post('/:workspaceId/columns', validate(createColumnSchema), asyncHandler(
 }));
 
 // Create task
-router.post('/:workspaceId/tasks', validate(createTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/tasks', validateParams(workspaceIdParamSchema), validate(createTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { columnId, title, description, priority } = req.body;
@@ -39,7 +40,7 @@ router.post('/:workspaceId/tasks', validate(createTaskSchema), asyncHandler(asyn
 }));
 
 // Move task (cross-column or reorder)
-router.post('/:workspaceId/move', validate(moveTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:workspaceId/move', validateParams(workspaceIdParamSchema), validate(moveTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const { taskId, fromColumnId, toColumnId, newPosition } = req.body;
@@ -48,7 +49,7 @@ router.post('/:workspaceId/move', validate(moveTaskSchema), asyncHandler(async (
 }));
 
 // Update task
-router.patch('/:workspaceId/tasks/:taskId', validate(updateTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.patch('/:workspaceId/tasks/:taskId', validateParams(z.object({ workspaceId: z.string().uuid(), taskId: z.string().uuid() })), validate(updateTaskSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const taskId = req.params.taskId as string;
@@ -57,7 +58,7 @@ router.patch('/:workspaceId/tasks/:taskId', validate(updateTaskSchema), asyncHan
 }));
 
 // Delete task
-router.delete('/:workspaceId/tasks/:taskId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:workspaceId/tasks/:taskId', validateParams(z.object({ workspaceId: z.string().uuid(), taskId: z.string().uuid() })), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const taskId = req.params.taskId as string;
@@ -66,7 +67,7 @@ router.delete('/:workspaceId/tasks/:taskId', asyncHandler(async (req: AuthReques
 }));
 
 // Delete column
-router.delete('/:workspaceId/columns/:columnId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:workspaceId/columns/:columnId', validateParams(z.object({ workspaceId: z.string().uuid(), columnId: z.string().uuid() })), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.workspaceId as string;
   const columnId = req.params.columnId as string;

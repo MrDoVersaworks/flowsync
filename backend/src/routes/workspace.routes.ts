@@ -10,13 +10,14 @@ import {
 } from '../services/workspace.service.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
-import { validate, createWorkspaceSchema, joinWorkspaceSchema } from '../middleware/validation.js';
-import { cacheMiddleware, invalidateCache } from '../utils/cache.js';
+import { validate, validateParams, createWorkspaceSchema, joinWorkspaceSchema, workspaceRoleSchema, uuidParamSchema, memberParamSchema } from '../middleware/validation.js';
+import { inviteRateLimiter } from '../middleware/rateLimiter.js';
+import { invalidateCache } from '../utils/cache.js';
 
 const router = Router();
 
 // Get all workspaces for current user (Paginated)
-router.get('/', cacheMiddleware(60), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;
@@ -37,7 +38,7 @@ router.post('/', validate(createWorkspaceSchema), asyncHandler(async (req: AuthR
 }));
 
 // Get workspace detail (members, tasks, etc)
-router.get('/:id', cacheMiddleware(60), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:id', validateParams(uuidParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
   const detail = await getWorkspaceDetail(userId, workspaceId);
@@ -45,7 +46,7 @@ router.get('/:id', cacheMiddleware(60), asyncHandler(async (req: AuthRequest, re
 }));
 
 // Update member role
-router.patch('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.patch('/:id/members/:memberId', validateParams(memberParamSchema), validate(workspaceRoleSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
   const memberId = req.params.memberId as string;
@@ -56,7 +57,7 @@ router.patch('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res
 }));
 
 // Remove member
-router.delete('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:id/members/:memberId', validateParams(memberParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
   const memberId = req.params.memberId as string;
@@ -66,7 +67,7 @@ router.delete('/:id/members/:memberId', asyncHandler(async (req: AuthRequest, re
 }));
 
 // Join workspace by invite code
-router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/join', inviteRateLimiter, validate(joinWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const { inviteCode } = req.body;
   const workspace = await joinWorkspaceByCode(userId, inviteCode);
@@ -75,7 +76,7 @@ router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: Aut
 }));
 
 // Delete workspace (owner only)
-router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:id', validateParams(uuidParamSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const workspaceId = req.params.id as string;
   const { password } = req.body;

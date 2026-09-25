@@ -27,7 +27,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'npm --prefix ../backend run dev',
+      command: 'cd ../backend && npm run migrate && npm run dev',
       url: 'http://localhost:5000/api/health',
       reuseExistingServer: true,
       timeout: 120 * 1000,

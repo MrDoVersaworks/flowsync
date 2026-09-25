@@ -30,7 +30,7 @@ export default function RegisterPage() {
       const { data } = await api.post('/auth/register', { name, email, password });
 
       if (data.success) {
-        setAuth(data.user, data.accessToken, data.refreshToken);
+        setAuth(data.user, data.accessToken);
         toast.success('Account created successfully!');
         router.push('/workspaces');
       } else {

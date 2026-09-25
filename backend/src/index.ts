@@ -11,16 +11,26 @@ import { logger } from './utils/logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import { generalRateLimiter, authRateLimiter, aiRateLimiter } from './middleware/rateLimiter.js';
 import { SocketEvent } from './constants.js';
+import { verifyToken } from './services/auth.service.js';
+import { db } from './db/connection.js';
+import { users, workspaceMembers } from './db/schema.js';
+import { eq, and } from 'drizzle-orm';
+import { jwtBlocklist } from './utils/blocklist.js';
 
 const app = express();
 const server = http.createServer(app);
+
+const corsOrigins = config.allowedOrigin.includes(',')
+  ? config.allowedOrigin.split(',').map((origin) => origin.trim().replace(/\/+$/, ''))
+  : config.allowedOrigin.trim().replace(/\/+$/, '');
+
 
 // ============================================================
 // SOCKET.IO REAL-TIME ENGINE (Initialized early for services)
 // ============================================================
 const io = new Server(server, {
   cors: {
-    origin: [config.allowedOrigin],
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   }
@@ -42,6 +52,7 @@ import aiRoutes from './routes/ai.routes.js';
 import commentRoutes from './routes/comment.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import contactRoutes from './routes/contact.routes.js';
+import realtimeRoutes from './routes/realtime.routes.js';
 
 // ============================================================
 // SECURITY & INFRASTRUCTURE GUARDS
@@ -54,15 +65,8 @@ app.use((helmet as any)({
   frameguard: { action: 'deny' }, // Prevent clickjacking
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Strict Transport Security
 }));
-let corsOrigin: string | string[];
-if (config.allowedOrigin.includes(',')) {
-  corsOrigin = config.allowedOrigin.split(',').map((origin) => origin.trim().replace(/\/+$/, ''));
-} else {
-  corsOrigin = config.allowedOrigin.trim().replace(/\/+$/, '');
-}
-
 app.use(cors({
-  origin: corsOrigin,
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -98,6 +102,7 @@ app.use('/api/settings', timeout('15s'), haltOnTimeout, generalRateLimiter, auth
 app.use('/api/ai', timeout('60s'), haltOnTimeout, generalRateLimiter, aiRateLimiter, authMiddleware, aiRoutes);
 app.use('/api/comments', timeout('15s'), haltOnTimeout, generalRateLimiter, authMiddleware, commentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/realtime', realtimeRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/public', publicRoutes);
 
@@ -122,17 +127,59 @@ app.use(errorHandler);
 // Map to track active collaborative minds
 const activeMinds = new Map<string, Set<{ userId: string, name: string, socketId: string }>>();
 
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token ||
+      socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '');
+    if (!token) return next(new Error('Authentication required'));
+    const signature = token.split('.')[2];
+    if (signature && jwtBlocklist.has(signature)) return next(new Error('Session invalidated'));
+
+    const user = await verifyToken(token);
+    const userRow = await db.select({ id: users.id, name: users.name })
+      .from(users).where(eq(users.id, user.userId)).limit(1);
+    if (userRow.length === 0) return next(new Error('Authenticated user not found'));
+
+    socket.data.userId = user.userId;
+    socket.data.userName = userRow[0].name;
+    next();
+  } catch {
+    next(new Error('Invalid or expired session'));
+  }
+});
+
 io.on('connection', (socket) => {
   logger.info('SOCKET', `Intelligence linked: ${socket.id}`);
 
-  socket.on(SocketEvent.JOIN_WORKSPACE, (data: { workspaceId: string, user: { id: string, name: string } }) => {
-    const { workspaceId, user } = data;
-    socket.join(workspaceId);
+  socket.on(SocketEvent.JOIN_WORKSPACE, async (data: { workspaceId: string }) => {
+    const { workspaceId } = data;
+    const userId = socket.data.userId as string;
+    const membership = await db.select({ userId: workspaceMembers.user_id })
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.user_id, userId), eq(workspaceMembers.workspace_id, workspaceId)))
+      .limit(1);
+    if (membership.length === 0) {
+      socket.emit('error', { code: 'AUTH_FORBIDDEN', message: 'Workspace membership required' });
+      return;
+    }
 
-    // Store user info in socket data for cleanup
-    (socket as any).userId = user.id;
-    (socket as any).workspaceId = workspaceId;
-    (socket as any).userName = user.name;
+    const previousWorkspaceId = socket.data.workspaceId as string | undefined;
+    if (previousWorkspaceId && previousWorkspaceId !== workspaceId) {
+      socket.leave(previousWorkspaceId);
+      const previousMinds = activeMinds.get(previousWorkspaceId);
+      if (previousMinds) {
+        for (const mind of previousMinds) {
+          if (mind.socketId === socket.id) previousMinds.delete(mind);
+        }
+        io.to(previousWorkspaceId).emit(SocketEvent.PRESENCE_UPDATED, Array.from(new Map(
+          Array.from(previousMinds).map(m => [m.userId, m])
+        ).values()));
+      }
+    }
+
+    socket.join(workspaceId);
+    socket.data.workspaceId = workspaceId;
+    const user = { id: userId, name: socket.data.userName as string };
 
     // Track active minds (Ensure no duplicates for the same socketId)
     if (!activeMinds.has(workspaceId)) {
@@ -158,7 +205,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on(SocketEvent.LEAVE_WORKSPACE, () => {
-    const wsId = (socket as any).workspaceId;
+    const wsId = socket.data.workspaceId as string | undefined;
     if (wsId && activeMinds.has(wsId)) {
       const minds = activeMinds.get(wsId)!;
       for (const mind of minds) {
@@ -178,7 +225,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const wsId = (socket as any).workspaceId;
-    const uId = (socket as any).userId;
 
     if (wsId && activeMinds.has(wsId)) {
       const minds = activeMinds.get(wsId)!;

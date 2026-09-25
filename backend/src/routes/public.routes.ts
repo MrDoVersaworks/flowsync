@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db } from '../db/connection.js';
 import { systemSettings, platformReviews } from '../db/schema.js';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -10,36 +11,51 @@ router.get('/settings', async (_req: Request, res: Response, next: NextFunction)
     const settingsArray = await db.select().from(systemSettings).limit(1);
     const settings = settingsArray[0] || { google_analytics_id: '', termly_uuid: '' };
     res.status(200).json({ success: true, data: settings });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 });
 
 router.get('/reviews', async (_req: Request, res: Response): Promise<void> => {
   try {
-    const reviews = await db.select().from(platformReviews).orderBy(desc(platformReviews.created_at));
+    const reviews = await db.select({
+      id: platformReviews.id,
+      name: platformReviews.name,
+      profession: platformReviews.profession,
+      rating: platformReviews.rating,
+      feedback: platformReviews.feedback,
+      createdAt: platformReviews.created_at,
+    }).from(platformReviews)
+      .where(eq(platformReviews.approved, true))
+      .orderBy(desc(platformReviews.created_at));
     res.status(200).json({ success: true, data: reviews });
-  } catch (_err) {
+  } catch {
     res.status(200).json({ success: true, data: [] });
   }
 });
 
-router.post('/reviews', async (req: Request, res: Response): Promise<void> => {
+const reviewSchema = z.object({
+  name: z.string().min(2).max(100),
+  profession: z.string().max(100).optional(),
+  rating: z.number().int().min(1).max(5),
+  feedback: z.string().min(10).max(1000),
+});
+
+router.post('/reviews', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, profession, rating, feedback } = req.body;
-    if (!name || !feedback) {
-      res.status(400).json({ success: false, message: '[ERR_VALIDATION] Name and feedback are required.' });
+    const parsed = reviewSchema.parse(req.body);
+    const [inserted] = await db.insert(platformReviews).values({
+      name: parsed.name.trim(),
+      profession: parsed.profession?.trim() || null,
+      rating: parsed.rating,
+      feedback: parsed.feedback.trim(),
+      approved: false,
+    }).returning();
+    res.status(201).json({ success: true, data: { id: inserted.id, status: 'pending' } });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: error.issues[0]?.message || 'Invalid review' } });
       return;
     }
-    const [inserted] = await db.insert(platformReviews).values({
-      name: String(name).trim(),
-      profession: profession ? String(profession).trim() : 'Verified User',
-      rating: Number(rating) || 5,
-      feedback: String(feedback).trim(),
-    }).returning();
-    res.status(201).json({ success: true, data: inserted });
-  } catch (_err) {
-    res.status(500).json({ success: false, message: '[ERR_REVIEW_POST_FAILED] Failed to post review.' });
+    next(error);
   }
 });
 
