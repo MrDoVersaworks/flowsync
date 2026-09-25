@@ -11,7 +11,6 @@ import {
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { validate, validateParams, createWorkspaceSchema, joinWorkspaceSchema, workspaceRoleSchema, uuidParamSchema, memberParamSchema } from '../middleware/validation.js';
-import { cacheMiddleware, invalidateCache } from '../utils/cache.js';
 
 const router = Router();
 
