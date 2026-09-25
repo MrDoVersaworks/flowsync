@@ -90,6 +90,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
 
     // 4. Persist the entire inception atomically. No realtime event is emitted before commit.
     const columnId = await db.transaction(async (tx) => {
+      let resolvedColumnId: string;
       if (targetColumnId) {
         const matching = await tx.select({ id: columns.id })
           .from(columns)
@@ -98,19 +99,19 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
         if (matching.length === 0) {
           throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Target column not found in this workspace' };
         }
-        return targetColumnId;
+        resolvedColumnId = matching[0].id;
       } else {
         const [newCol] = await tx.insert(columns).values({
           workspace_id: workspaceId,
           title: parsed.suggested_column_title,
           position: 0,
         }).returning({ id: columns.id });
-        return newCol.id;
+        resolvedColumnId = newCol.id;
       }
 
       const taskValues = parsed.tasks.map((task, index) => ({
         workspace_id: workspaceId,
-        column_id: columnId,
+        column_id: resolvedColumnId,
         title: task.title,
         description: task.description,
         priority: task.priority,
@@ -118,7 +119,7 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
         created_by: userId,
       }));
       await tx.insert(tasks).values(taskValues);
-      return columnId;
+      return resolvedColumnId;
     });
 
     // 5. Real-Time Convergence: Broadcast to Sanctuary
