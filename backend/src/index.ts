@@ -19,12 +19,17 @@ import { eq, and } from 'drizzle-orm';
 const app = express();
 const server = http.createServer(app);
 
+const corsOrigins = config.allowedOrigin.includes(',')
+  ? config.allowedOrigin.split(',').map((origin) => origin.trim().replace(/\/+$/, ''))
+  : config.allowedOrigin.trim().replace(/\/+$/, '');
+
+
 // ============================================================
 // SOCKET.IO REAL-TIME ENGINE (Initialized early for services)
 // ============================================================
 const io = new Server(server, {
   cors: {
-    origin: [config.allowedOrigin],
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   }
@@ -59,15 +64,8 @@ app.use((helmet as any)({
   frameguard: { action: 'deny' }, // Prevent clickjacking
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // Strict Transport Security
 }));
-let corsOrigin: string | string[];
-if (config.allowedOrigin.includes(',')) {
-  corsOrigin = config.allowedOrigin.split(',').map((origin) => origin.trim().replace(/\/+$/, ''));
-} else {
-  corsOrigin = config.allowedOrigin.trim().replace(/\/+$/, '');
-}
-
 app.use(cors({
-  origin: corsOrigin,
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
