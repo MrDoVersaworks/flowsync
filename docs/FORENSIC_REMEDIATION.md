@@ -5,7 +5,7 @@
 - Audit branch: audit-remediation
 - Baseline SHA: 91d931f5f7cc30436a4b0cee293859f59e9d34e3
 - main and audit-remediation both pointed at the baseline SHA before remediation work.
-- Main must not be modified.
+- The remediation was developed on audit-remediation; Pull Request #1 was subsequently merged into main at b891055d03300f1c7def14b6afb1bc50de143412.
 
 ## Governing audit
 The portfolio audit snapshot at public-systems/flowsync/ORIGINAL_AUDIT.md contains 34 findings: 12 P0 and 22 P1. The audit explicitly requires tracing adjacent code and proving both remediation and preservation.
@@ -113,12 +113,12 @@ This document records the pre-fix reconstruction. Code remediation follows in se
 
 ## Testing / verification evidence
 - Repository history and current source were inspected before code changes.
-- Main remains unchanged at 91d931f5f7cc30436a4b0cee293859f59e9d34e3.
-- audit-remediation currently contains the remediation commits and is the only modified branch.
+- Main now contains the merged remediation at b891055d03300f1c7def14b6afb1bc50de143412; the pre-remediation baseline remains 91d931f5f7cc30436a4b0cee293859f59e9d34e3.
+- audit-remediation contains post-merge documentation commits and therefore appears ahead/diverged from main; those documentation changes are being brought to main separately.
 - GitHub Actions workflow was strengthened to run migrations, backend typecheck/build, and frontend lint/typecheck/build, but no workflow run was created for this branch in the connected GitHub environment.
 - Vercel produced READY deployments for intermediate audit-remediation commits (including 556fb5909203990fb87fb87db4d821f24f7203d9). Later deployment attempts were queued/cancelled due Vercel build/deployment rate limits. Therefore a clean build of the final SHA has NOT been claimed.
 - No database-backed integration environment was available in this session for executing the migration and authorization tests directly.
-- The final branch must therefore remain a draft remediation state until the CI/deployment gates can execute against the final SHA.
+- Pre-production remediation work is complete; production deployment and the post-production verification below remain separate evidence gates.
 
 ## Known remaining / intentionally unverified areas
 - Socket.IO process-local presence remains a single-instance fallback. Pusher production presence needs a dedicated presence-channel path if multi-instance presence is required independently of Pusher event delivery.
@@ -155,3 +155,90 @@ For each remediation area, acceptance required both:
 2. the original functional path remains represented by build, integration, or E2E coverage.
 
 This record intentionally does not claim that every possible production scenario has been exhaustively simulated. It records the strongest automated evidence available in the repository/CI environment and keeps deployment-specific verification distinct from source-level verification.
+
+## Final post-production verification — REQUIRED AFTER PRODUCTION DEPLOYMENT
+
+**Status: NOT COMPLETE UNTIL THE REAL PRODUCTION ENVIRONMENT HAS BEEN TESTED.**
+
+This is separate evidence from CI, local testing, preview deployments, and pre-production E2E. Do not mark it complete merely because GitHub Actions is green. No application behavior should be changed as part of this documentation/verification task.
+
+For every area below, record the date/time, deployed commit SHA, Vercel deployment ID/URL, exact test performed, result, and limitation/unverified item.
+
+### 1. Production deployment and infrastructure
+- Confirm the production deployment is the intended commit/artifact and is READY.
+- Confirm frontend/backend production configuration and endpoints are correct.
+- Confirm Pusher remains configured as the production realtime mechanism.
+- Confirm there is no unintended infrastructure/configuration drift.
+- Result: UNVERIFIED — production verification pending.
+
+### 2. Production database/schema and migrations
+- Run the committed migration runner against the actual production database.
+- Confirm committed migrations are recorded in schema_migrations.
+- Confirm required tables, constraints, indexes, refresh-session and rate-limit structures exist.
+- Confirm the migration is idempotent.
+- Inspect existing data for unintended transformation, especially email normalization/duplicate handling.
+- Result: UNVERIFIED — production database migration pending.
+- Limitation: CI used a fresh PostgreSQL database and does not prove compatibility with the live dataset.
+
+### 3. Persistence and data integrity
+- Exercise representative create/update/delete flows with controlled test data.
+- Verify membership uniqueness, task/column relationships, comments, reviews, sessions, and rate-limit state.
+- Verify transactional AI task creation leaves no partial state after a safely induced failure.
+- Verify existing production data remains readable and intact.
+- Result: UNVERIFIED — production data-integrity testing pending.
+
+### 4. Authentication and session behavior
+- Verify controlled-account login/register, access-token authentication, refresh via httpOnly credential, rotation, reuse rejection, logout/revocation, and invalid/expired credential handling.
+- Confirm production error responses do not leak internal details.
+- Result: UNVERIFIED — production authentication verification pending.
+
+### 5. Authorization/access control
+- Verify owner/admin/member/viewer capabilities.
+- Verify viewer mutations are rejected and owner-only operations remain owner-only.
+- Verify cross-workspace access is rejected.
+- Verify admin endpoints reject non-admin identities.
+- Verify identity comes from authenticated server-side state.
+- Result: UNVERIFIED — production authorization verification pending.
+
+### 6. Security boundaries and adversarial cases
+- Verify unauthenticated protected requests, malformed UUID/input boundaries, Pusher private-channel authorization, Socket.IO authentication/join isolation, correlation-ID/error handling, and security/cost-critical rate limits.
+- Use only safe, non-destructive production tests.
+- Result: UNVERIFIED — production security-boundary verification pending.
+
+### 7. API contracts and client/server integration
+- Verify production frontend-to-backend requests, auth refresh/retry, public settings/reviews, workspace/task/comment/review/contact/admin/realtime contracts, and response/error shapes.
+- Result: UNVERIFIED — production API integration pending.
+
+### 8. Background jobs, notifications, and scheduled processes
+- Verify applicable production email/notification and scheduled/background processes with controlled recipients.
+- If a category is not used in production, record N/A — not applicable.
+- Result: UNVERIFIED — production operational-process verification pending.
+
+### 9. File/object storage
+- Determine whether production uses file/object storage in the remediation scope.
+- If applicable, verify authorized access boundaries; otherwise record N/A — not applicable.
+- Result: UNVERIFIED — applicability/production verification pending.
+
+### 10. Frontend/browser behavior
+- Test the production application in a real browser: authentication bootstrap, protected navigation, workspace/Kanban/comments/member management, reviews/contact, and relevant realtime UI.
+- Check browser console/network failures relevant to the remediation.
+- Verify Pusher behavior from the production browser.
+- Result: UNVERIFIED — production browser verification pending.
+
+### 11. End-to-end/regression behavior
+- Run a production-safe E2E/regression subset against the deployed application.
+- Include both successful and failure paths and the intended workflows preserved by remediation.
+- Result: UNVERIFIED — production E2E/regression verification pending.
+- Limitation: The existing 30-test Playwright CI run is pre-production evidence and is not a substitute for this step.
+
+### 12. Original functionality preserved
+For each remediation, prove both:
+1. the security/correctness boundary is fixed; and
+2. the original intended user-facing behavior still works.
+
+At minimum verify authentication/session continuity, workspace membership/roles, Kanban/tasks/comments, realtime collaboration/presence/events, AI task generation, reviews/contact, notifications where applicable, admin functionality, and public pages/API behavior.
+
+- Result: UNVERIFIED — final production preservation evidence pending.
+
+### Production evidence rule
+An area may be marked VERIFIED only after recording the exact production test, target/deployment identity, observed result, date/time, and relevant evidence/artifacts, plus any limitation. A green CI run, successful build, preview deployment, or migration against a disposable database is not production verification.
