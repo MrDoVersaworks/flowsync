@@ -9,7 +9,7 @@ async function runMigrations(): Promise<void> {
 
   const pool = new pg.Pool({
     connectionString: config.databaseUrl,
-    ssl: { rejectUnauthorized: false },
+    ssl: config.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
   });
 
   const migrationsDir = path.resolve(process.cwd(), 'drizzle');
