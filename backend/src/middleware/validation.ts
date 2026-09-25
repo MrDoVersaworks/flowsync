@@ -100,7 +100,7 @@ export const memberParamSchema = z.object({
 
 export const validateParams = (schema: z.ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
   try {
-    req.params = schema.parse(req.params);
+    req.params = schema.parse(req.params) as Record<string, string>;
     next();
   } catch (error: unknown) {
     const message = error instanceof z.ZodError ? (error.issues[0]?.message || 'Invalid route parameters') : 'Invalid route parameters';
