@@ -3,15 +3,10 @@ import { db } from '../db/connection.js';
 import { contactMessages } from '../db/schema.js';
 import { z } from 'zod';
 import { AppError } from '../middleware/errorHandler.js';
-import { rateLimit } from 'express-rate-limit';
+import { persistentRateLimit } from '../middleware/rateLimiter.js';
 
 const router = Router();
-const contactRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const contactRateLimiter = persistentRateLimit({ name: 'contact', windowMs: 15 * 60 * 1000, max: 10 });
 
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(255),
