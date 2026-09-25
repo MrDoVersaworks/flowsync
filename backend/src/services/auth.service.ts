@@ -96,37 +96,42 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
 export async function refreshAccessToken(rawToken: string): Promise<{ user: UserResponse; accessToken: string; refreshToken: string }> {
   const tokenHash = hashRefreshToken(rawToken);
-  const rows = await db.select().from(refreshSessions)
-    .where(and(
-      eq(refreshSessions.token_hash, tokenHash),
-      isNull(refreshSessions.revoked_at),
-      gt(refreshSessions.expires_at, new Date()),
-    ))
-    .limit(1);
+  const now = new Date();
 
-  if (rows.length === 0) {
-    throw { status: 401, code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Refresh session is invalid or expired' };
-  }
+  const rotated = await db.transaction(async (tx) => {
+    const [session] = await tx.update(refreshSessions)
+      .set({ revoked_at: now })
+      .where(and(
+        eq(refreshSessions.token_hash, tokenHash),
+        isNull(refreshSessions.revoked_at),
+        gt(refreshSessions.expires_at, now),
+      ))
+      .returning();
 
-  const session = rows[0];
-  const userRows = await db.select().from(users).where(eq(users.id, session.user_id)).limit(1);
-  if (userRows.length === 0) {
-    throw { status: 401, code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Refresh session is invalid' };
-  }
+    if (!session) return null;
 
-  const nextToken = await db.transaction(async (tx) => {
-    await tx.update(refreshSessions).set({ revoked_at: new Date() }).where(eq(refreshSessions.id, session.id));
+    const userRows = await tx.select().from(users).where(eq(users.id, session.user_id)).limit(1);
+    if (userRows.length === 0) return null;
+
     const nextRaw = crypto.randomBytes(48).toString('base64url');
     await tx.insert(refreshSessions).values({
       user_id: session.user_id,
       token_hash: hashRefreshToken(nextRaw),
       expires_at: new Date(Date.now() + REFRESH_TTL_MS),
     });
-    return nextRaw;
+
+    return { user: userRows[0], refreshToken: nextRaw };
   });
 
-  const user = userRows[0];
-  return { user: toUserResponse(user), accessToken: generateAccessToken(user), refreshToken: nextToken };
+  if (!rotated) {
+    throw { status: 401, code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Refresh session is invalid or expired' };
+  }
+
+  return {
+    user: toUserResponse(rotated.user),
+    accessToken: generateAccessToken(rotated.user),
+    refreshToken: rotated.refreshToken,
+  };
 }
 
 export async function revokeRefreshToken(rawToken?: string): Promise<void> {
