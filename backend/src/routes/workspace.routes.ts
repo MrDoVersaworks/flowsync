@@ -11,6 +11,7 @@ import {
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { AuthRequest } from '../types/auth.types.js';
 import { validate, validateParams, createWorkspaceSchema, joinWorkspaceSchema, workspaceRoleSchema, uuidParamSchema, memberParamSchema } from '../middleware/validation.js';
+import { inviteRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -65,7 +66,7 @@ router.delete('/:id/members/:memberId', validateParams(memberParamSchema), async
 }));
 
 // Join workspace by invite code
-router.post('/join', validate(joinWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/join', inviteRateLimiter, validate(joinWorkspaceSchema), asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!.userId;
   const { inviteCode } = req.body;
   const workspace = await joinWorkspaceByCode(userId, inviteCode);
