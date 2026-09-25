@@ -7,12 +7,25 @@ import { logger } from '../utils/logger.js';
 import { ErrorCode, DEFAULT_AI_MODEL } from '../constants.js';
 
 import { AITask } from '../types/ai.types.js';
+import { z } from 'zod';
+import { requireWorkspaceMutation } from './authorization.service.js';
 
 import { tasks, columns } from '../db/schema.js';
 import { io } from '../index.js';
-import { getBoard, createColumn, verifyColumnInWorkspace } from './kanban.service.js';
+import { getBoard, verifyColumnInWorkspace } from './kanban.service.js';
+
+const aiBreakdownResultSchema = z.object({
+  suggested_column_title: z.string().trim().min(1).max(100),
+  tasks: z.array(z.object({
+    title: z.string().trim().min(1).max(255),
+    description: z.string().max(2000),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  }).strict()).min(1).max(8),
+}).strict();
 
 export async function breakdownGoal(userId: string, workspaceId: string, goal: string, targetColumnId?: string): Promise<AITask[]> {
+  await requireWorkspaceMutation(userId, workspaceId);
+
   // 1. Get user configuration
   const userResult = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (userResult.length === 0) {
@@ -73,42 +86,45 @@ export async function breakdownGoal(userId: string, workspaceId: string, goal: s
     const response = await result.response;
     const text = response.text();
     const cleanedText = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleanedText);
+    const parsed = aiBreakdownResultSchema.parse(JSON.parse(cleanedText));
 
-    if (!parsed.tasks || !Array.isArray(parsed.tasks)) {
-      throw new Error('Invalid AI response format');
-    }
-
-    // 4. Grounding: Find or Create the suggested column
+    // 4. Persist the entire inception atomically. No realtime event is emitted before commit.
     let columnId: string;
+    await db.transaction(async (tx) => {
+      if (targetColumnId) {
+        const matching = await tx.select({ id: columns.id })
+          .from(columns)
+          .where(and(eq(columns.id, targetColumnId), eq(columns.workspace_id, workspaceId)))
+          .limit(1);
+        if (matching.length === 0) {
+          throw { status: 404, code: ErrorCode.DB_NOT_FOUND, message: 'Target column not found in this workspace' };
+        }
+        columnId = targetColumnId;
+      } else {
+        const [newCol] = await tx.insert(columns).values({
+          workspace_id: workspaceId,
+          title: parsed.suggested_column_title,
+          position: 0,
+        }).returning({ id: columns.id });
+        columnId = newCol.id;
+      }
 
-    if (targetColumnId) {
-      await verifyColumnInWorkspace(workspaceId, targetColumnId);
-      columnId = targetColumnId;
-    } else {
-      const suggestedTitle = parsed.suggested_column_title || 'New Goal Expansion';
-      // ALWAYS create a new column for a new goal as requested by the user
-      const newCol = await createColumn(userId, workspaceId, suggestedTitle);
-      columnId = newCol.id;
-    }
-
-    // 4. Infrastructure Inception: Bulk Insert Tasks
-    const taskValues = parsed.tasks.map((t: any, index: number) => ({
-      workspace_id: workspaceId,
-      column_id: columnId,
-      title: t.title,
-      description: t.description,
-      priority: t.priority,
-      position: index,
-      created_by: userId
-    }));
-
-    await db.insert(tasks).values(taskValues);
+      const taskValues = parsed.tasks.map((task, index) => ({
+        workspace_id: workspaceId,
+        column_id: columnId,
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        position: index,
+        created_by: userId,
+      }));
+      await tx.insert(tasks).values(taskValues);
+    });
 
     // 5. Real-Time Convergence: Broadcast to Sanctuary
     io.to(workspaceId).emit('board-updated', { type: 'AI_INCEPTION', workspaceId });
+    logger.info('AI', `Successfully committed AI inception for workspace: ${workspaceId}`);
 
-    logger.info('AI', `Successfully orchestrated ${parsed.tasks.length} tasks for workspace: ${workspaceId}`);
     return parsed.tasks;
   } catch (error: any) {
     logger.error('ERROR', `Technical breakdown aborted`, error);
