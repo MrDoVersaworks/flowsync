@@ -10,7 +10,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Authentication required' },
+      error: { code: ErrorCode.AUTH_UNAUTHORIZED, message: 'Authentication required.' },
     });
   }
 
@@ -31,7 +31,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
   } catch (error) {
     return res.status(401).json({
       success: false,
-      error: { code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Invalid or expired token' },
+      error: { code: ErrorCode.AUTH_INVALID_TOKEN, message: 'Invalid or expired token.' },
     });
   }
 };
