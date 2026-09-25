@@ -103,7 +103,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/e2e_db
       JWT_SECRET: e2e_secret_key_for_testing_purposes_only_32bytes
-      AES_KEY: e2e_aes_key_for_testing_purposes_only_32bytes
+      AES_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       NODE_ENV: test
       ALLOWED_ORIGIN: http://localhost:3000
       NEXT_PUBLIC_API_URL: http://localhost:5000
