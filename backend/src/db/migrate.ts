@@ -57,6 +57,17 @@ async function runMigrations(): Promise<void> {
       }
     }
 
+    const requiredTables = ['users', 'workspaces', 'workspace_members', 'tasks', 'task_comments', 'system_settings', 'platform_reviews', 'rate_limit_buckets', 'refresh_sessions'];
+    for (const table of requiredTables) {
+      const result = await pool.query(
+        'SELECT to_regclass($1) AS table_name',
+        [table],
+      );
+      if (!result.rows[0]?.table_name) {
+        throw new Error(`Required migration table is missing: ${table}`);
+      }
+    }
+
     console.log('[MIGRATE] Migrations completed successfully.');
   } finally {
     await pool.end();
