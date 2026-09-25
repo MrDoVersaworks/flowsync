@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '@/components/layout/Navbar';
 import ThemeProvider from '@/components/shared/ThemeProvider';
+import SessionBootstrap from '@/components/shared/SessionBootstrap';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -78,6 +79,7 @@ export default async function RootLayout({
       </head>
       <body className={`${inter.className} bg-primary text-primary antialiased`}>
         <ThemeProvider>
+          <SessionBootstrap />
           <div className="relative flex min-h-screen flex-col">
             <Navbar />
             <main className="flex-1 overflow-x-hidden pt-16">
